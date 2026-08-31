@@ -1,0 +1,53 @@
+{
+  "expo": {
+    "name": "Stronghold",
+    "slug": "stronghold",
+    "scheme": "stronghold",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#16232f",
+    "primaryColor": "#e0b467",
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "bundleIdentifier": "app.livestronghold.stronghold",
+      "buildNumber": "1",
+      "supportsTablet": false,
+      "requireFullScreen": true,
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
+        "UIViewControllerBasedStatusBarAppearance": false
+      }
+    },
+    "android": {
+      "package": "app.livestronghold.stronghold",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "backgroundColor": "#0f0f10",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "edgeToEdgeEnabled": true
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 180,
+          "resizeMode": "contain",
+          "backgroundColor": "#16232f",
+          "dark": {
+            "backgroundColor": "#16232f"
+          }
+        }
+      ],
+      "expo-font"
+    ]
+  }
+}
