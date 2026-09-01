@@ -11,20 +11,11 @@ import { loadState, saveState, clearState, emptyState } from "../lib/storage";
 import { build as buildPlan } from "../engine/planEngine";
 import { logEvent, saveLead } from "../lib/supabase";
 import { setUserAttributes } from "../lib/superwall";
+import { toLegacyAnswers, cleanName } from "../onboarding/derive";
+import { FIRST_SCREEN } from "../onboarding/screens";
+import { scheduleRiskWindowReminder } from "../lib/notifications";
 
 const AppContext = createContext(null);
-
-// Ordem do quiz do app (a mesma do PWA: 8 passos, o funil web tem 13).
-export const QUIZ = [
-  "name",
-  "currentAgeRange",
-  "frequency",
-  "firstExposureAge",
-  "highRiskTime",
-  "primaryTrigger",
-  "copingMechanism",
-  "faithImpact",
-];
 
 export function AppProvider({ children }) {
   const [state, setState] = useState(emptyState);
@@ -59,37 +50,48 @@ export function AppProvider({ children }) {
         logEvent("screen_view", screen);
       },
 
-      answer(key, value) {
-        update((prev) => ({ ...prev, answers: { ...prev.answers, [key]: value } }));
+      /* ---------- Onboarding (PRD V3) ---------- */
+
+      /** Cada submit de tela grava o profile inteiro (persistência por tela). */
+      setProfile(profile) {
+        update({ profile });
       },
 
-      nextQuestion() {
-        const prev = stateRef.current;
-        if (prev.qIndex < QUIZ.length - 1) {
-          update({ qIndex: prev.qIndex + 1 });
-        } else {
-          update({ screen: "loading" });
-        }
+      /** Guarda o screen_id atual, pra retomar do ponto certo ao reabrir. */
+      setOnboardingScreen(screenId) {
+        update({ onboardingScreen: screenId });
       },
 
-      prevQuestion() {
+      /**
+       * Fim do onboarding: o profile vira o plano do motor de orações,
+       * o streak começa e o app entra na Home.
+       */
+      completeOnboarding() {
         const prev = stateRef.current;
-        if (prev.qIndex > 0) update({ qIndex: prev.qIndex - 1 });
-        else update({ screen: "welcome" });
-      },
+        const profile = prev.profile || {};
+        const answers = toLegacyAnswers(profile);
+        const plan = buildPlan(answers);
+        const startDate = prev.startDate || profile.started_at || Date.now();
 
-      /** Fim do quiz: gera o plano com o motor e começa o streak. */
-      finishQuiz() {
-        const prev = stateRef.current;
-        const plan = buildPlan(prev.answers);
-        const startDate = prev.startDate || Date.now();
-        update({ plan, startDate, screen: "profile" });
-        saveLead(prev.answers, { intent: "app_onboarding" });
+        update({
+          answers,
+          plan,
+          startDate,
+          onboardingDone: true,
+          subscribed: true,
+          screen: "home",
+        });
+
+        saveLead(answers, { intent: "app_onboarding_v3" });
         setUserAttributes(plan);
-        logEvent("plan_generated", "loading", {
+        scheduleRiskWindowReminder(profile, cleanName(profile.name));
+        logEvent("onboarding_completed", "screen_27_paywall", {
           archetype: plan.archetype && plan.archetype.key,
-          trigger: prev.answers.primaryTrigger,
-          highRiskTime: prev.answers.highRiskTime,
+          primary_trigger: profile.primary_trigger,
+          primary_danger_moment: profile.primary_danger_moment,
+          deepest_cost: profile.deepest_cost,
+          commitment_level: profile.commitment_level,
+          first_goal: profile.first_goal,
         });
         return plan;
       },
@@ -131,7 +133,9 @@ export function AppProvider({ children }) {
 
       async restart() {
         await clearState();
-        setState({ ...emptyState });
+        const fresh = { ...emptyState, onboardingScreen: FIRST_SCREEN };
+        stateRef.current = fresh;
+        setState(fresh);
       },
 
       update,

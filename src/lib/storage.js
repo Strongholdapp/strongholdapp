@@ -11,10 +11,18 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 const KEY = "sh_app_v1";
 
 export const emptyState = {
-  answers: {},
-  qIndex: 0,
+  // ---- onboarding (PRD V3, 27 telas) ----
+  // profile é o estado global da seção 3.3 do PRD; onboardingScreen guarda
+  // o último screen_id concluído, pra retomar exatamente onde parou se o
+  // app for fechado no meio.
+  profile: {},
+  onboardingScreen: null,
+  onboardingDone: false,
+
+  // ---- app depois do onboarding ----
+  answers: {}, // formato antigo, alimentado pelo profile (ponte do planEngine)
   plan: null,
-  screen: "welcome",
+  screen: "onboarding",
   startDate: null,
   pledgedDay: null,
   subscribed: false,

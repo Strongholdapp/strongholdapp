@@ -43,21 +43,59 @@ aprovados.
 ## Estrutura
 
 ```
-App.js                     roteador (uma tela por vez, igual ao PWA)
+App.js                     roteador: onboarding primeiro, app depois
 src/
-  data/       copy.js · prayers.js · resets.js     ← do funil, só viraram ESM
-  engine/     planEngine.js                        ← o motor: build(answers) → plano
-  state/      AppContext.js                        ← estado + persistência local
-  lib/        env · storage · supabase · superwall
-  theme/      theme.js                             ← tokens do design system
-  components/ ui.js · Icons.js
-  screens/    as telas
+  onboarding/  screens.js       ← as 27 telas do PRD, como CONFIGURAÇÃO
+               QuizEngine.js    ← o renderer que monta cada tela
+               derive.js        ← derivações, placeholders, ponte pro motor
+               proof.js         ← os depoimentos reais
+               components/      ← um componente por TIPO de tela
+  data/        copy.js · prayers.js · resets.js   ← do funil, só viraram ESM
+  engine/      planEngine.js                      ← o motor: build(answers) → plano
+  state/       AppContext.js                      ← estado + persistência local
+  lib/         env · storage · supabase · superwall · notifications · analytics
+  theme/       theme.js                           ← tokens do design system
+  components/  ui.js · Icons.js
+  screens/     as telas do app pós-onboarding
 ```
 
 **Regra de ouro herdada do handoff:** dado e lógica se copiam, render se reescreve. Se precisar
 mudar um texto de tela, mexa em `src/data/copy.js`, não no componente.
 
-### As telas
+---
+
+## O onboarding (PRD V3, 27 telas)
+
+Implementado como Quiz Engine, exatamente como a seção 3 do PRD pede: não existem 27 páginas
+hardcoded. `src/onboarding/screens.js` descreve cada tela (tipo, copy, opções, auto-advance,
+mínimo de seleções, próxima tela, evento) e o `QuizEngine` renderiza.
+
+**Mudar copy, ordem, opção ou ponto de proof = editar `screens.js`.** Você só escreve componente
+quando aparece um TIPO de tela novo.
+
+Tipos implementados: `WELCOME · TEXT_INPUT · SINGLE_SELECT · MULTI_SELECT · COMMITMENT ·
+PERSONALIZED_INTERSTITIAL · PATTERN_REVEAL · REFRAME · MECHANISM · PRODUCT_DEMO · PRIVACY ·
+RESULT_BRIDGE · RECOVERY_PROFILE · PLAN_90 · CELEBRATION · PERMISSION_PREPROMPT ·
+NATIVE_PERMISSION · PROOF_BRIDGE · PAYWALL`.
+
+O que o PRD exige e está funcionando:
+
+- **Personalização real:** as respostas voltam no bridge, no pattern reveal, no demo, no perfil e
+  no paywall. O motor de placeholders nunca deixa `{chave}` crua na tela; sem valor, cai num
+  fallback neutro.
+- **Derivação determinística:** `derivePrimaryDangerMoment` usa a lista de prioridade da seção 8,
+  sem IA. Mudar uma resposta recalcula tudo que vem depois.
+- **Persistência por tela:** o profile e o `screen_id` são gravados a cada submit. Fechar e
+  reabrir volta exatamente no mesmo ponto, com as respostas.
+- **Proof só real:** os 7 pontos de proof puxam de `proof.js`, que só tem depoimentos autorizados.
+  A tela 01 mostra estrelas apenas se `APP_RATING` tiver número de verdade; enquanto for `null`,
+  usa a identity line.
+- **Edge cases da seção 11:** primeira tentativa muda o reframe, "sem padrão claro" muda o demo,
+  nome sujo é sanitizado, permissão negada não interrompe o funil.
+- **Analytics da seção 5:** os 13 eventos, com `screen_id` e `screen_index` em todo view e
+  `time_on_screen_ms` em todo submit, pra dar completion rate por tela.
+
+### As telas do app depois do onboarding
 
 | Tela | Arquivo | O que é |
 |---|---|---|

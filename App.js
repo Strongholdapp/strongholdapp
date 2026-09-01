@@ -6,7 +6,7 @@
    guardada no aparelho, então o app sempre reabre exatamente onde parou.
    ============================================================ */
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { View, StatusBar as RNStatusBar } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -25,11 +25,13 @@ import { Lora_600SemiBold } from "@expo-google-fonts/lora/600SemiBold";
 
 import { AppProvider, useApp } from "./src/state/AppContext";
 import { Dusk } from "./src/components/ui";
-import { configure as configureSuperwall } from "./src/lib/superwall";
+import { configure as configureSuperwall, presentPaywall } from "./src/lib/superwall";
+import { configureHandler } from "./src/lib/notifications";
+import { hasSuperwall, SUPERWALL_PLACEMENT, PAYWALL_ENABLED } from "./src/lib/env";
+import * as A from "./src/lib/analytics";
+import QuizEngine from "./src/onboarding/QuizEngine";
+import { FIRST_SCREEN } from "./src/onboarding/screens";
 
-import WelcomeScreen from "./src/screens/WelcomeScreen";
-import QuizScreen from "./src/screens/QuizScreen";
-import LoadingScreen from "./src/screens/LoadingScreen";
 import ProfileScreen from "./src/screens/ProfileScreen";
 import PlanScreen from "./src/screens/PlanScreen";
 import PaywallScreen from "./src/screens/PaywallScreen";
@@ -44,7 +46,14 @@ import YouScreen from "./src/screens/YouScreen";
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
 function Router() {
-  const { state, ready } = useApp();
+  const {
+    state,
+    ready,
+    setProfile,
+    setOnboardingScreen,
+    completeOnboarding,
+  } = useApp();
+  const [payingBusy, setPayingBusy] = useState(false);
 
   useEffect(() => {
     if (ready) SplashScreen.hideAsync().catch(() => {});
@@ -52,16 +61,49 @@ function Router() {
 
   if (!ready) return <Dusk />;
 
-  // Telas que só existem depois do quiz caem no welcome se não houver plano.
-  const needsPlan = (Screen) => (state.plan ? <Screen /> : <WelcomeScreen />);
+  /* ---------- Onboarding: as 27 telas do PRD ----------
+     Enquanto não terminar, é ele quem manda. Retoma exatamente no
+     screen_id em que a pessoa parou, mesmo depois de fechar o app. */
+  if (!state.onboardingDone) {
+    return (
+      <QuizEngine
+        profile={state.profile || {}}
+        currentScreenId={state.onboardingScreen || FIRST_SCREEN}
+        onProfileChange={setProfile}
+        onScreenChange={setOnboardingScreen}
+        paywall={{
+          busy: payingBusy,
+          note: hasSuperwall()
+            ? null
+            : "Superwall key not set: this build unlocks without a purchase so the whole app can be tested.",
+        }}
+        onFinish={async () => {
+          setPayingBusy(true);
+          const profile = state.profile || {};
+          let result = "success";
+          if (PAYWALL_ENABLED) {
+            const res = await presentPaywall(SUPERWALL_PLACEMENT, {
+              firstName: profile.name,
+              trigger: profile.primary_trigger,
+              dangerMoment: profile.primary_danger_moment,
+              desire: profile.primary_desire,
+            });
+            if (res.skipped) result = res.error === "no_api_key" ? "skipped_no_key" : "skipped";
+          }
+          A.purchaseResult(result);
+          setPayingBusy(false);
+          completeOnboarding();
+        }}
+      />
+    );
+  }
+
+  /* ---------- App depois do onboarding ---------- */
+  const needsPlan = (Screen) => (state.plan ? <Screen /> : <HomeScreen />);
 
   switch (state.screen) {
-    case "quiz":
-      return <QuizScreen />;
-    case "loading":
-      return <LoadingScreen />;
     case "profile":
-      return state.plan ? <ProfileScreen withTabs={Boolean(state.subscribed)} /> : <WelcomeScreen />;
+      return state.plan ? <ProfileScreen withTabs /> : <HomeScreen />;
     case "plan":
       return needsPlan(PlanScreen);
     case "paywall":
@@ -82,7 +124,7 @@ function Router() {
     case "you":
       return needsPlan(YouScreen);
     default:
-      return <WelcomeScreen />;
+      return needsPlan(HomeScreen);
   }
 }
 
@@ -100,6 +142,8 @@ export default function App() {
 
   useEffect(() => {
     configureSuperwall();
+    configureHandler();
+    A.startSession();
   }, []);
 
   if (!fontsLoaded) {
