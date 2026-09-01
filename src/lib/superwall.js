@@ -50,19 +50,35 @@ export async function configure() {
  * @returns {Promise<{skipped:boolean, error?:string}>}
  */
 export async function presentPaywall(placement, params) {
-  if (!hasSuperwall()) return { skipped: true, error: "no_api_key" };
+  if (!hasSuperwall()) return { granted: false, skipped: true, error: "no_api_key" };
   const mod = getSdk();
-  if (!mod) return { skipped: true, error: "no_native_module" };
+  if (!mod) return { granted: false, skipped: true, error: "no_native_module" };
   try {
     if (!configured) await configure();
     const Superwall = mod.default || mod.Superwall;
+    let granted = false;
     await Superwall.shared.register({
       placement: placement || SUPERWALL_PLACEMENT,
       params: params || {},
+      feature: () => { granted = true; },
     });
-    return { skipped: false };
+    return { granted, skipped: false };
   } catch (e) {
-    return { skipped: true, error: String(e && e.message ? e.message : e) };
+    return { granted: false, skipped: true, error: String(e && e.message ? e.message : e) };
+  }
+}
+
+export async function isSubscribed() {
+  if (!hasSuperwall()) return null;
+  const mod = getSdk();
+  if (!mod) return null;
+  try {
+    if (!configured) await configure();
+    const Superwall = mod.default || mod.Superwall;
+    const s = await Superwall.shared.getSubscriptionStatus();
+    return Boolean(s && s.status === "ACTIVE");
+  } catch (e) {
+    return null;
   }
 }
 

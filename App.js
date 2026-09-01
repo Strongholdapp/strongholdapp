@@ -80,19 +80,25 @@ function Router() {
         onFinish={async () => {
           setPayingBusy(true);
           const profile = state.profile || {};
-          let result = "success";
-          if (PAYWALL_ENABLED) {
-            const res = await presentPaywall(SUPERWALL_PLACEMENT, {
-              firstName: profile.name,
-              trigger: profile.primary_trigger,
-              dangerMoment: profile.primary_danger_moment,
-              desire: profile.primary_desire,
-            });
-            if (res.skipped) result = res.error === "no_api_key" ? "skipped_no_key" : "skipped";
+          if (!PAYWALL_ENABLED || !hasSuperwall()) {
+            A.purchaseResult("skipped_no_key");
+            setPayingBusy(false);
+            completeOnboarding();
+            return;
           }
-          A.purchaseResult(result);
+          const res = await presentPaywall(SUPERWALL_PLACEMENT, {
+            firstName: profile.name,
+            trigger: profile.primary_trigger,
+            dangerMoment: profile.primary_danger_moment,
+            desire: profile.primary_desire,
+          });
           setPayingBusy(false);
-          completeOnboarding();
+          if (res.granted) {
+            A.purchaseResult("success");
+            completeOnboarding();
+            return;
+          }
+          A.purchaseResult(res.skipped ? "fail" : "cancel", { error: res.error || null });
         }}
       />
     );
