@@ -68,7 +68,12 @@ export function ProofCard({ id, tag, compact }) {
   return (
     <View style={[st.proof, compact && { padding: 14 }]}>
       {tag ? <Text style={st.proofTag}>{String(tag).toUpperCase()}</Text> : null}
-      <Text style={[st.proofText, compact && { fontSize: 14.5, lineHeight: 22 }]}>
+      {/* compact corta em 4 linhas: onde o depoimento é acessório (tela do
+          reset, por exemplo) ele não pode dominar a tela. */}
+      <Text
+        style={[st.proofText, compact && { fontSize: 14.5, lineHeight: 22 }]}
+        numberOfLines={compact ? 4 : undefined}
+      >
         “{r.text}”
       </Text>
       <View style={st.proofFoot}>

@@ -18,7 +18,23 @@ import { APP_RATING, IDENTITY_LINE } from "./proof";
 
 // Progresso: só corre durante o bloco de perguntas (telas 02 a 13 e 21/25).
 // O PRD proíbe mostrar 100% antes do diagnóstico.
-const P = (n) => Math.round((n / 16) * 100) / 100;
+/**
+ * Barra de progresso psicológica , mesma fórmula do funil web (quiz.js,
+ * "Barra psicológica (pedido do dono)").
+ *
+ * A primeira pergunta já abre em 50% e o avanço desacelera numa curva de
+ * raiz quadrada, chegando a 100% na última. A pessoa lê "isso é curto" logo
+ * de cara e entra no quiz; depois, cada passo mexe pouco na barra, então
+ * ela não sente que travou.
+ *
+ * P_MAX é o maior n usado aqui embaixo. Se alguém adicionar uma tela com
+ * progresso maior, tem que subir esse número junto.
+ */
+const P_MAX = 15;
+const P = (n) => {
+  const pct = n <= 1 ? 0.5 : 0.5 + 0.5 * Math.sqrt((n - 1) / (P_MAX - 1));
+  return Math.round(pct * 100) / 100;
+};
 
 export const SCREENS = [
   /* ---------- 01 ---------- */
@@ -272,17 +288,18 @@ export const SCREENS = [
   {
     id: "screen_14_reframe",
     type: "REFRAME",
-    headline: "Then this probably isn't because you don't want freedom badly enough.",
-    // Blocos revelados um a um. O primeiro é trocado quando é a primeira
-    // tentativa dele (edge case da seção 11 do PRD).
+    headline: "This probably isn't because you don't want freedom badly enough.",
+    // Três linhas, não quatro: o Lucas pediu virada, não aula (03/09).
+    // A primeira é trocada quando é a primeira tentativa dele (edge case da
+    // seção 11 do PRD).
     blocks: [
       "You've prayed.",
       "You've promised yourself this time would be different.",
-      "Maybe you blocked websites, deleted apps or started another streak.",
-      "But when the moment came, you were still alone with the urge.",
+      "Maybe you blocked sites, deleted apps, started another streak.",
     ],
-    punch: "Eventually, the pattern starts to feel automatic.",
-    punchSub: "And automatic patterns can be interrupted.",
+    punch: "The same moment kept coming back.",
+    punchSub:
+      "Eventually, the pattern starts to feel automatic. And automatic patterns can be interrupted.",
     // O diagrama do loop entrou aqui em vez de virar tela própria: depois de
     // Block/Prayer/Reset ele seria repetição (decisão do Lucas, 02/09).
     loop: {
@@ -309,9 +326,9 @@ export const SCREENS = [
     // tela de bloqueio com o botão que leva pra oração. Renderizados a partir
     // do produto (reminderCopy + InterventionScreen), não imagem.
     printLabels: { notification: "The reminder, at your hour", block: "The block, in the moment" },
-    body: "Maximum Protection blocks adult sites across your whole phone, quietly, without you doing anything. And when the pull hits anyway, one tap stops the moment before it goes further.",
-    contrastA: "Not after the fall.",
-    contrastB: "Before the cycle continues.",
+    // Uma frase só, depois dos dois prints. O bloco de contraste saiu: o
+    // Lucas pediu velocidade nesta tela (03/09).
+    body: "Maximum Protection blocks adult sites across your whole phone. And when the pull hits anyway, one tap stops the moment , before the cycle continues.",
     cta: "Continue",
     analytics: { view: "onboarding_mechanism_demo_view", personalized: true },
     next: "screen_16_prayer",
@@ -328,6 +345,8 @@ export const SCREENS = [
     stayLine: "stay here for a moment.",
     costPrefix: "You told us the hardest part of this struggle is",
     prayerTag: "A prayer written for this exact moment",
+    // Selo pedido pelo Lucas (03/09): a oração não pode parecer genérica.
+    personalTag: "Written from what you told us",
     body: "Built from your trigger, your struggle and what you're fighting for.",
     cta: "Continue",
     analytics: { view: "onboarding_mechanism_demo_view", personalized: true },
@@ -340,8 +359,9 @@ export const SCREENS = [
     type: "RESET_STEP",
     eyebrow: "Step 3",
     headline: "Get through the next 2 minutes",
-    punch: "One practical reset.",
-    body: "A short guided action to help you step out of the automatic pattern and choose differently.",
+    // Sem bloco de explicação: timer, título, três ações e um depoimento
+    // pequeno. Pedido do Lucas (03/09) , tela de produto, não de texto.
+    resetSteps: 3,
     proof: "caleb",
     proofTag: "The moment",
     cta: "Continue",
@@ -353,13 +373,13 @@ export const SCREENS = [
   {
     id: "screen_18_privacy",
     type: "PRIVACY",
-    headline: "And nobody needs to know.",
-    subheadline: "Your struggle stays private.",
+    headline: "Your activity stays private.",
+    // Três garantias concretas. A quarta linha ("entre você, o Stronghold e
+    // Deus") saiu por ser abstrata demais , pedido do Lucas (03/09).
     checks: [
       "No mandatory accountability partner",
       "No public confession",
       "No exposing your history",
-      "Your recovery stays between you, Stronghold and God",
     ],
     seal: "Private. No judgment.",
     cta: "Continue",
@@ -435,9 +455,10 @@ export const SCREENS = [
       milestones: ["Day 1", "Day 3", "Day 7", "Day 28", "Day 90"],
       foot: "Day 1 starts the moment you finish here.",
     },
-    proof: "nathan",
+    // Sem depoimento aqui: esta tela é plano, não plano + prova social
+    // (pedido do Lucas, 03/09).
     cta: "Continue",
-    analytics: { view: "onboarding_proof_view", proof_id: "nathan" },
+    analytics: { view: "onboarding_plan_view" },
     next: "screen_21_first_goal",
   },
 
@@ -516,21 +537,17 @@ export const SCREENS = [
   {
     id: "screen_26_final_proof",
     type: "PROOF_BRIDGE",
-    headline: "You're not the only Christian man fighting this.",
+    // Enxugada a pedido do Lucas (03/09): título + montagem + 3 cards +
+    // fecho. Sem carrossel e sem reensinar o produto antes do preço.
+    headline: "Stronghold was built for the moment other solutions miss.",
     rating: APP_RATING,
-    // Carrossel com o grupo do funil (cardsPaywall: Caleb, Nathan, Joshua).
-    // A ordem é a das objeções: mecanismo, casamento, Deus.
-    marqueeGroup: "paywall",
     // "montagem bonita com 3 mockups: blocker + prayer + progress" (Lucas).
     // Renderizados, não imagem: mostram o nome e o streak reais da pessoa.
     mockMontage: true,
     mockLabels: { block: "Blocked", pray: "Your prayer", progress: "Your streak" },
-    reviews: [
-      { id: "joshua", tag: "Faith" },
-      { id: "caleb", tag: "The moment" },
-      { id: "nathan", tag: "Living without the secret" },
-    ],
-    mechanismTitle: "Stronghold was built for the moment other solutions miss.",
+    // Sem depoimentos aqui: a prova social toda ficou na tela 27, pra esta
+    // não virar landing page logo antes do preço (Lucas, 03/09).
+    mechanismTitle: null,
     mechanism: [
       { n: 1, title: "STOP", body: "One tap stops the moment before the cycle continues." },
       {
@@ -540,8 +557,7 @@ export const SCREENS = [
       },
       { n: 3, title: "RESET", body: "Two minutes to get through the urge." },
     ],
-    closer:
-      "You've already told Stronghold where you struggle, what triggers you and why freedom matters to you.",
+    closer: null,
     closerSub: "Your protection is ready.",
     cta: "See My Plan",
     analytics: { view: "onboarding_proof_view" },
@@ -569,6 +585,29 @@ export const SCREENS = [
     ],
     closer: "It's not about more willpower.",
     closerSub: "It's about having Stronghold there when willpower is weakest.",
+    // Print da comunidade (pedido do Lucas, 02/09). Espelha a
+    // BrotherhoodScreen: os posts saem do mesmo conteúdo que a aba mostra.
+    community: {
+      label: "The brotherhood, inside the app",
+      eyebrow: "Brotherhood",
+      title: "You don't have to fight this alone.",
+      posts: [
+        {
+          name: "Marcus",
+          status: "Day 14",
+          quote:
+            "Last night Stronghold warned me before I started scrolling. This time I used the reset instead.",
+          encouragements: "Encouraged by 23 brothers",
+        },
+        {
+          name: "Daniel",
+          status: "Day 31",
+          quote:
+            "First night in months that I recognized the pattern before it got stronger.",
+          encouragements: "Encouraged by 40 brothers",
+        },
+      ],
+    },
     // Segundo carrossel do funil (cardsPaywallSecondary), mesma função que
     // ele tem lá: "More stories from the brotherhood".
     marqueeGroup: "brotherhood",

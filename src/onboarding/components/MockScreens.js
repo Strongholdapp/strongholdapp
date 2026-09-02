@@ -25,6 +25,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { View, Text, StyleSheet, Animated, Easing } from "react-native";
 import { Btn, Pill } from "../../components/ui";
+import { Logo } from "../../components/Icons";
 import { colors, fonts, radius } from "../../theme/theme";
 import { Shell, Head, Reveal, ProofCard, st as sh } from "./shared";
 import { labelFor, edgeCopy, toLegacyAnswers, cleanName } from "../derive";
@@ -120,8 +121,11 @@ function NotificationPrint({ profile, label }) {
         <View style={s.lockWrap}>
           <View style={s.notif}>
             <View style={s.notifHead}>
+              {/* A logo REAL do app (mesmo SVG do ícone e do funil). Antes era
+                  uma cruz solta num quadrado, e ficava diferente do app , o
+                  Lucas pegou isso no áudio de 02/09. */}
               <View style={s.appIcon}>
-                <Text style={s.appIconTxt}>✝</Text>
+                <Logo size={15} />
               </View>
               <Text style={s.notifApp}>STRONGHOLD</Text>
               <Text style={s.notifWhen}>now</Text>
@@ -224,15 +228,10 @@ export function InterruptStep({ screen, profile, onNext, onBack }) {
         />
       </Reveal>
 
+      {/* Uma frase e o CTA. O bloco de contraste saiu pra tela andar mais
+          rápido (pedido do Lucas, 03/09). */}
       <Reveal index={2} delay={220}>
         <Text style={s.stepBody}>{screen.body}</Text>
-      </Reveal>
-
-      <Reveal index={3} delay={220}>
-        <View style={s.contrast}>
-          <Text style={s.contrastMuted}>{screen.contrastA}</Text>
-          <Text style={s.contrastStrong}>{screen.contrastB}</Text>
-        </View>
       </Reveal>
     </Shell>
   );
@@ -284,6 +283,11 @@ export function PrayerStep({ screen, profile, onNext, onBack }) {
           <View style={s.prayerDivider} />
 
           <Text style={s.prayerIcon}>🙏</Text>
+          {screen.personalTag ? (
+            <View style={s.personalTag}>
+              <Text style={s.personalTagTxt}>✦ {screen.personalTag}</Text>
+            </View>
+          ) : null}
           <Text style={s.prayerTag}>{screen.prayerTag}</Text>
           {snippet ? <Text style={s.prayerText}>“{snippet}”</Text> : null}
           {prayer && prayer.verse ? (
@@ -313,7 +317,8 @@ export function ResetStep({ screen, profile, onNext, onBack }) {
     }
   }, [profile]);
 
-  const steps = (reset && reset.steps ? reset.steps : []).slice(0, 2).map(shortStep);
+  const howMany = screen.resetSteps || 3;
+  const steps = (reset && reset.steps ? reset.steps : []).slice(0, howMany).map(shortStep);
 
   return (
     <Shell
@@ -338,14 +343,9 @@ export function ResetStep({ screen, profile, onNext, onBack }) {
         </Device>
       </Reveal>
 
+      {/* Só o depoimento pequeno depois do timer. A explicação saiu: o
+          Lucas pediu tela de produto, não de texto (03/09). */}
       <Reveal index={1} delay={200}>
-        <View style={s.punchBox}>
-          <Text style={s.punch}>{screen.punch}</Text>
-          <Text style={s.punchSub}>{screen.body}</Text>
-        </View>
-      </Reveal>
-
-      <Reveal index={2} delay={200}>
         <ProofCard id={screen.proof} tag={screen.proofTag} compact />
       </Reveal>
     </Shell>
@@ -366,6 +366,49 @@ function Ticker() {
       <Text style={s.ticker}>
         {mm}:{ss}
       </Text>
+    </View>
+  );
+}
+
+/* ============================================================
+   PRINT 3 , A COMUNIDADE (Brotherhood)
+
+   Pedido do Lucas: "tem o de comunidade também, faz sentido incrementar".
+   Espelha a BrotherhoodScreen: selo Private, o cabeçalho da aba e dois
+   posts com avatar, dia e os encorajamentos. Mesma regra dos outros
+   prints , sai do produto, não é imagem.
+   ============================================================ */
+export function CommunityPrint({ screen }) {
+  const c = screen && screen.community;
+  if (!c) return null;
+  return (
+    <View>
+      <Text style={s.printLabel}>{c.label}</Text>
+      <Device time={c.time || "9:41 PM"}>
+        <View style={s.commTop}>
+          <Text style={s.commEyebrow}>{String(c.eyebrow || "Brotherhood").toUpperCase()}</Text>
+          <Pill>🔒 Private</Pill>
+        </View>
+        <Text style={s.commTitle}>{c.title}</Text>
+
+        {(c.posts || []).map((po, i) => (
+          <View key={i} style={s.commPost}>
+            <View style={s.commHead}>
+              <View style={s.commAv}>
+                <Text style={s.commAvTxt}>{String(po.name).charAt(0)}</Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={s.commName}>{po.name}</Text>
+                <Text style={s.commDay}>{po.status}</Text>
+              </View>
+            </View>
+            <Text style={s.commQuote} numberOfLines={3}>
+              “{po.quote}”
+            </Text>
+            <Text style={s.commEnc}>{po.encouragements}</Text>
+          </View>
+        ))}
+      </Device>
     </View>
   );
 }
@@ -562,11 +605,10 @@ const s = StyleSheet.create({
     width: 18,
     height: 18,
     borderRadius: 4.5,
-    backgroundColor: colors.gold,
+    backgroundColor: "rgba(255,255,255,0.10)",
     alignItems: "center",
     justifyContent: "center",
   },
-  appIconTxt: { fontSize: 11, color: colors.onGold, fontFamily: fonts.bold },
   notifApp: {
     flex: 1,
     fontFamily: fonts.semibold,
@@ -672,6 +714,63 @@ const s = StyleSheet.create({
     alignItems: "center",
   },
   fakeBtnTxt: { fontFamily: fonts.bold, fontSize: 13, color: colors.onGold },
+
+  /* ---------- print 3: comunidade ---------- */
+  commTop: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 4,
+  },
+  commEyebrow: {
+    fontFamily: fonts.bold,
+    fontSize: 10,
+    letterSpacing: 1.4,
+    color: colors.gold,
+  },
+  commTitle: {
+    fontFamily: fonts.serif,
+    fontSize: 17,
+    lineHeight: 24,
+    color: colors.ink,
+    marginTop: 10,
+    marginBottom: 4,
+  },
+  commPost: {
+    marginTop: 10,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.line,
+    backgroundColor: colors.card2,
+    padding: 11,
+  },
+  commHead: { flexDirection: "row", alignItems: "center", gap: 8 },
+  commAv: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.goldSoft,
+    borderWidth: 1,
+    borderColor: colors.goldBorder,
+  },
+  commAvTxt: { fontFamily: fonts.bold, fontSize: 11, color: colors.gold },
+  commName: { fontFamily: fonts.semibold, fontSize: 12.5, color: colors.ink },
+  commDay: { fontFamily: fonts.body, fontSize: 10.5, color: colors.muted2 },
+  commQuote: {
+    fontFamily: fonts.serifItalic,
+    fontSize: 12.5,
+    lineHeight: 19,
+    color: colors.muted,
+    marginTop: 8,
+  },
+  commEnc: {
+    fontFamily: fonts.semibold,
+    fontSize: 10.5,
+    color: colors.gold,
+    marginTop: 8,
+  },
 
   /* ---------- mini montagem ---------- */
   miniRow: { flexDirection: "row", gap: 8, marginTop: 18 },
@@ -792,6 +891,22 @@ const s = StyleSheet.create({
     marginVertical: 16,
   },
   prayerIcon: { fontSize: 22 },
+  personalTag: {
+    alignSelf: "flex-start",
+    marginTop: 10,
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: colors.goldBorder,
+    backgroundColor: colors.goldSoft,
+  },
+  personalTagTxt: {
+    fontFamily: fonts.semibold,
+    fontSize: 11,
+    letterSpacing: 0.3,
+    color: colors.gold,
+  },
   prayerTag: {
     fontFamily: fonts.bold,
     fontSize: 11,
@@ -865,4 +980,4 @@ const s = StyleSheet.create({
   },
 });
 
-export default { InterruptStep, PrayerStep, ResetStep, MiniMocks };
+export default { InterruptStep, PrayerStep, ResetStep, MiniMocks, CommunityPrint };

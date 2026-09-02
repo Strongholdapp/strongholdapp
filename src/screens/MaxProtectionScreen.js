@@ -96,6 +96,25 @@ export default function MaxProtectionScreen() {
           </Text>
         </View>
 
+        {/* Versão HONESTA do "difícil de desativar" que o Lucas pediu duas
+            vezes. O iOS não deixa um app impedir a remoção de um perfil, e
+            dizer que é impossível seria mentira pra quem está comprando por
+            causa disso , além de contradizer as notas de revisão da Apple.
+            O que É verdade: remover exige Ajustes e a senha, ou seja, não
+            acontece no impulso. E dar a senha a um parceiro de
+            responsabilidade é o que torna a remoção realmente difícil. */}
+        <View style={st.card}>
+          <Text style={st.cardLabel}>HARD TO UNDO IN THE MOMENT</Text>
+          <Text style={st.cardBody}>
+            Removing it is not one tap. It takes going into Settings and typing your device
+            passcode , which is not something you do in the middle of an urge.
+          </Text>
+          <Text style={st.cardBody}>
+            Want it harder still? Have your accountability partner set the passcode. Then taking
+            the protection off stops being a decision you can make alone at 1 a.m.
+          </Text>
+        </View>
+
         <Text style={st.stepsTitle}>THREE STEPS</Text>
         {STEPS.map((s2) => (
           <View key={s2.n} style={st.stepRow}>

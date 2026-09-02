@@ -73,6 +73,11 @@ export default function QuizEngine({
     }
     if (screen.type === "RECOVERY_PROFILE") A.recoveryProfileView(profile);
     if (screen.type === "PAYWALL") A.paywallView("onboarding_v4", profile);
+
+    // Tempo na tela: o cleanup roda quando o screenId muda ou o onboarding
+    // sai de cena, então mede a permanência real.
+    const enteredAt = Date.now();
+    return () => A.screenTime(screenId, index, Date.now() - enteredAt);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [screenId]);
 

@@ -17,7 +17,7 @@ import { Btn, Pill } from "../../components/ui";
 import { ShieldIcon } from "../../components/Icons";
 import { colors, fonts, radius } from "../../theme/theme";
 import { Shell, Head, Reveal, ProofCard, ProofMarquee, Stars, st as sh } from "./shared";
-import { MiniMocks } from "./MockScreens";
+import { MiniMocks, CommunityPrint } from "./MockScreens";
 import { fill, labelFor, labelInline, GOAL_BENEFITS, edgeCopy, ninetyDayDate } from "../derive";
 
 /* ============================================================
@@ -415,10 +415,8 @@ export function Plan90({ screen, profile, onNext, onBack }) {
           </View>
         </Reveal>
       ) : null}
-
-      <Reveal index={6}>
-        <ProofCard id={screen.proof} />
-      </Reveal>
+      {/* Sem depoimento aqui: data + 4 fases + streak, e acabou. Esta tela é
+          o plano, não plano + prova social (pedido do Lucas, 03/09). */}
     </Shell>
   );
 }
@@ -562,11 +560,9 @@ export function ProofBridge({ screen, profile, onNext, onBack }) {
     <Shell onBack={onBack} footer={<Btn title={screen.cta} onPress={() => onNext()} />}>
       <Head headline={screen.headline} serif />
 
-      {screen.marqueeGroup ? (
-        <Reveal index={0}>
-          <ProofMarquee group={screen.marqueeGroup} />
-        </Reveal>
-      ) : null}
+      {/* Sem carrossel de depoimentos aqui: a prova social vive na tela 27,
+          e esta tela não pode reensinar o produto logo antes do preço
+          (pedido do Lucas, 03/09). */}
 
       {screen.rating ? (
         <Reveal index={0}>
@@ -594,9 +590,11 @@ export function ProofBridge({ screen, profile, onNext, onBack }) {
         </Reveal>
       ) : null}
 
-      <Reveal index={3}>
-        <Text style={s.mechTitle}>{screen.mechanismTitle}</Text>
-      </Reveal>
+      {screen.mechanismTitle ? (
+        <Reveal index={3}>
+          <Text style={s.mechTitle}>{screen.mechanismTitle}</Text>
+        </Reveal>
+      ) : null}
 
       {(screen.mechanism || []).map((m, i) => (
         <Reveal key={m.n} index={4 + i}>
@@ -614,7 +612,7 @@ export function ProofBridge({ screen, profile, onNext, onBack }) {
 
       <Reveal index={7}>
         <View style={s.readyBox}>
-          <Text style={s.readyTxt}>{screen.closer}</Text>
+          {screen.closer ? <Text style={s.readyTxt}>{screen.closer}</Text> : null}
           <Text style={s.readyGold}>{screen.closerSub}</Text>
         </View>
       </Reveal>
@@ -680,13 +678,21 @@ export function PaywallBridge({ screen, profile, onStart, onBack, busy, note }) 
           o pré-paywall. Três depoimentos cobrindo fé, momento e privacidade,
           que são as três objeções. Todos reais: ProofCard não renderiza id
           que não existe, então nunca sobra card vazio. */}
+      {/* Print da comunidade: entra logo antes do carrossel do brotherhood,
+          que é o bloco que fala da mesma coisa. */}
+      {screen.community ? (
+        <Reveal index={10} delay={220}>
+          <CommunityPrint screen={screen} />
+        </Reveal>
+      ) : null}
+
       {screen.marqueeGroup ? (
-        <Reveal index={10}>
+        <Reveal index={11}>
           <ProofMarquee group={screen.marqueeGroup} />
         </Reveal>
       ) : (
         (screen.proofs || (screen.proof ? [{ id: screen.proof }] : [])).map((p, i) => (
-          <Reveal key={p.id} index={10 + i}>
+          <Reveal key={p.id} index={11 + i}>
             <ProofCard id={p.id} tag={p.tag} compact />
           </Reveal>
         ))

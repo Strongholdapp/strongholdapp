@@ -34,7 +34,21 @@ const tap = () => Haptics.selectionAsync().catch(() => {});
    ============================================================ */
 export function WelcomeScreen({ screen, onNext, profile }) {
   return (
-    <Shell scroll={false} contentStyle={{ justifyContent: "center" }}>
+    <Shell
+      scroll={false}
+      contentStyle={{ justifyContent: "center" }}
+      // O CTA vai pelo footer do Shell, que já respeita a margem lateral e a
+      // safe area de baixo. Antes era um View absoluto com left/right 0, e o
+      // botão saía até a borda da tela (achado do Lucas, 02/09).
+      footer={
+        <>
+          <Btn title={screen.cta} onPress={() => onNext()} />
+          <Pressable onPress={() => onNext()} hitSlop={10}>
+            <Text style={s.secondary}>{screen.secondary}</Text>
+          </Pressable>
+        </>
+      }
+    >
       <View style={{ alignItems: "center" }}>
         <Reveal index={0}>
           <Logo size={64} />
@@ -76,15 +90,6 @@ export function WelcomeScreen({ screen, onNext, profile }) {
             </View>
           </Reveal>
         ) : null}
-      </View>
-
-      <View style={{ position: "absolute", left: 0, right: 0, bottom: 24 }}>
-        <Reveal index={5}>
-          <Btn title={screen.cta} onPress={() => onNext()} />
-          <Pressable onPress={() => onNext()} hitSlop={10}>
-            <Text style={s.secondary}>{screen.secondary}</Text>
-          </Pressable>
-        </Reveal>
       </View>
     </Shell>
   );
@@ -183,9 +188,15 @@ export function SingleSelectScreen({ screen, value, onSubmit, onBack, profile })
               {o.emoji ? <Text style={s.emoji}>{o.emoji}</Text> : null}
               <View style={{ flex: 1 }}>
                 <Text style={s.optionTxt}>{o.label}</Text>
-                {o.recommended ? <Text style={s.recommended}>Recommended</Text> : null}
+                {o.recommended ? (
+                  <View style={s.recBadge}>
+                    <Text style={s.recBadgeTxt}>RECOMMENDED</Text>
+                  </View>
+                ) : null}
               </View>
-              <View style={[s.radio, selected === o.value && s.radioOn]} />
+              <View style={[s.radio, selected === o.value && s.radioOn]}>
+                {selected === o.value ? <Text style={s.radioTick}>✓</Text> : null}
+              </View>
             </Pressable>
           </Reveal>
         ))}
@@ -392,18 +403,45 @@ const s = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 17,
   },
-  optionOn: { borderColor: colors.gold, backgroundColor: "rgba(224,180,103,0.1)" },
+  // Selecionado tem que ser óbvio (pedido do Lucas, 03/09): borda dourada
+  // mais grossa, fundo mais quente e halo.
+  optionOn: {
+    borderColor: colors.gold,
+    borderWidth: 2,
+    backgroundColor: "rgba(224,180,103,0.16)",
+    shadowColor: "#c6a054",
+    shadowOpacity: 0.3,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
+  },
   optionTxt: { flex: 1, fontFamily: fonts.medium, fontSize: 16, lineHeight: 21, color: colors.ink },
   emoji: { fontSize: 21 },
-  recommended: {
-    fontFamily: fonts.bold,
-    fontSize: 11,
-    letterSpacing: 1,
-    color: colors.gold,
-    marginTop: 3,
+  recBadge: {
+    alignSelf: "flex-start",
+    marginTop: 6,
+    paddingVertical: 3,
+    paddingHorizontal: 9,
+    borderRadius: radius.pill,
+    backgroundColor: colors.gold,
   },
-  radio: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: colors.line },
-  radioOn: { borderColor: colors.gold, backgroundColor: colors.gold, borderWidth: 4 },
+  recBadgeTxt: {
+    fontFamily: fonts.bold,
+    fontSize: 9.5,
+    letterSpacing: 1,
+    color: colors.onGold,
+  },
+  radio: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: colors.line,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  radioOn: { borderColor: colors.gold, backgroundColor: colors.gold, borderWidth: 2 },
+  radioTick: { fontFamily: fonts.bold, fontSize: 13, color: colors.onGold },
   check: {
     width: 24,
     height: 24,

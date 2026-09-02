@@ -41,6 +41,23 @@ export function answerSubmitted(screenId, answerValue, extra) {
   });
 }
 
+/**
+ * Quanto tempo a pessoa ficou na tela, medido na saída.
+ *
+ * Junto com onboarding_screen_view (completion por tela) e onboarding_back
+ * (back rate), é o que permite responder as três perguntas do Lucas depois
+ * da subida: qual tela derruba, qual tela confunde, e quanto tempo leva até
+ * o paywall. Sem isso a otimização vira opinião.
+ */
+export function screenTime(screenId, screenIndex, ms) {
+  logEvent("onboarding_screen_time", screenId, {
+    screen_id: screenId,
+    screen_index: screenIndex,
+    ms: Math.round(ms),
+    seconds: Math.round(ms / 100) / 10,
+  });
+}
+
 export function back(fromScreen, toScreen) {
   logEvent("onboarding_back", fromScreen, { from_screen: fromScreen, to_screen: toScreen });
 }
