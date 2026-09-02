@@ -16,7 +16,7 @@ import * as Haptics from "expo-haptics";
 import { Btn, Pill } from "../../components/ui";
 import { ShieldIcon } from "../../components/Icons";
 import { colors, fonts, radius } from "../../theme/theme";
-import { Shell, Head, Reveal, ProofCard, st as sh } from "./shared";
+import { Shell, Head, Reveal, ProofCard, ProofMarquee, st as sh } from "./shared";
 import { fill, labelFor, labelInline, GOAL_BENEFITS, edgeCopy, ninetyDayDate } from "../derive";
 
 /* ============================================================
@@ -129,6 +129,27 @@ export function ReframeScreen({ screen, profile, onNext, onBack }) {
           <Text style={s.punchSub}>{screen.punchSub}</Text>
         </View>
       </Reveal>
+
+      {/* Mini-diagrama do loop: entrou aqui em vez de virar tela própria,
+          porque depois de Interrupt/Prayer/Reset ele seria repetição. */}
+      {screen.loop ? (
+        <Reveal index={blocks.length + 1} delay={240}>
+          <View style={s.loopBox}>
+            <Text style={s.loopLabel}>{String(screen.loop.label).toUpperCase()}</Text>
+            <View style={s.loopRow}>
+              {screen.loop.steps.map((step, i) => (
+                <React.Fragment key={step}>
+                  <Text style={s.loopStep}>{step}</Text>
+                  {i < screen.loop.steps.length - 1 ? (
+                    <Text style={s.loopArrow}>→</Text>
+                  ) : null}
+                </React.Fragment>
+              ))}
+            </View>
+            <Text style={s.loopBack}>{screen.loop.back}</Text>
+          </View>
+        </Reveal>
+      ) : null}
     </Shell>
   );
 }
@@ -334,7 +355,31 @@ export function Plan90({ screen, profile, onNext, onBack }) {
         </Reveal>
       ))}
 
-      <Reveal index={5}>
+      {/* Streak: o plano vira mais visual sem virar texto novo. Os marcos
+          são os mesmos da Celebration, então o que ele vê aqui é o que ele
+          vai ver no app depois. */}
+      {screen.streak ? (
+        <Reveal index={5}>
+          <View style={s.streakBox}>
+            <Text style={s.streakLabel}>{String(screen.streak.label).toUpperCase()}</Text>
+            <View style={s.streakRow}>
+              {screen.streak.milestones.map((m, i) => (
+                <View key={m} style={s.streakItem}>
+                  <View style={[s.streakDot, i === 0 && s.streakDotHot]}>
+                    <Text style={[s.streakDotTxt, i === 0 && s.streakDotTxtHot]}>{m}</Text>
+                  </View>
+                  {i < screen.streak.milestones.length - 1 ? (
+                    <View style={s.streakLine} />
+                  ) : null}
+                </View>
+              ))}
+            </View>
+            <Text style={s.streakFoot}>{screen.streak.foot}</Text>
+          </View>
+        </Reveal>
+      ) : null}
+
+      <Reveal index={6}>
         <ProofCard id={screen.proof} />
       </Reveal>
     </Shell>
@@ -480,6 +525,12 @@ export function ProofBridge({ screen, profile, onNext, onBack }) {
     <Shell onBack={onBack} footer={<Btn title={screen.cta} onPress={() => onNext()} />}>
       <Head headline={screen.headline} serif />
 
+      {screen.marqueeGroup ? (
+        <Reveal index={0}>
+          <ProofMarquee group={screen.marqueeGroup} />
+        </Reveal>
+      ) : null}
+
       {screen.rating ? (
         <Reveal index={0}>
           <View style={{ alignItems: "center", marginTop: 12 }}>
@@ -491,7 +542,7 @@ export function ProofBridge({ screen, profile, onNext, onBack }) {
         </Reveal>
       ) : null}
 
-      {(screen.reviews || []).map((r, i) => (
+      {(screen.marqueeGroup ? [] : screen.reviews || []).map((r, i) => (
         <Reveal key={r.id} index={i}>
           <ProofCard id={r.id} tag={r.tag} />
         </Reveal>
@@ -577,13 +628,92 @@ export function PaywallBridge({ screen, profile, onStart, onBack, busy, note }) 
           <Text style={s.pwCloserTxt}>{screen.closer}</Text>
           <Text style={s.pwCloserGold}>{screen.closerSub}</Text>
         </View>
-        <ProofCard id={screen.proof} compact />
       </Reveal>
+
+      {/* A tela de Final Proof deixou de existir e o proof veio pra cá, que é
+          o pré-paywall. Três depoimentos cobrindo fé, momento e privacidade,
+          que são as três objeções. Todos reais: ProofCard não renderiza id
+          que não existe, então nunca sobra card vazio. */}
+      {screen.marqueeGroup ? (
+        <Reveal index={10}>
+          <ProofMarquee group={screen.marqueeGroup} />
+        </Reveal>
+      ) : (
+        (screen.proofs || (screen.proof ? [{ id: screen.proof }] : [])).map((p, i) => (
+          <Reveal key={p.id} index={10 + i}>
+            <ProofCard id={p.id} tag={p.tag} compact />
+          </Reveal>
+        ))
+      )}
     </Shell>
   );
 }
 
 const s = StyleSheet.create({
+  /* ---- mini-diagrama do loop (tela do reframe) ---- */
+  loopBox: {
+    marginTop: 22,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.line,
+    backgroundColor: colors.card,
+    padding: 16,
+  },
+  loopLabel: {
+    fontFamily: fonts.bold,
+    fontSize: 10.5,
+    letterSpacing: 1.4,
+    color: colors.muted2,
+    marginBottom: 10,
+  },
+  loopRow: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 6 },
+  loopStep: { fontFamily: fonts.semibold, fontSize: 13.5, color: colors.ink },
+  loopArrow: { fontFamily: fonts.body, fontSize: 13, color: colors.muted2 },
+  loopBack: {
+    fontFamily: fonts.body,
+    fontSize: 13,
+    color: colors.muted2,
+    marginTop: 10,
+    fontStyle: "italic",
+  },
+
+  /* ---- streak do plano de 90 dias ---- */
+  streakBox: {
+    marginTop: 20,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.line,
+    backgroundColor: colors.card,
+    padding: 16,
+  },
+  streakLabel: {
+    fontFamily: fonts.bold,
+    fontSize: 10.5,
+    letterSpacing: 1.4,
+    color: colors.gold,
+    marginBottom: 14,
+  },
+  streakRow: { flexDirection: "row", alignItems: "center" },
+  streakItem: { flexDirection: "row", alignItems: "center" },
+  streakDot: {
+    paddingHorizontal: 9,
+    paddingVertical: 6,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: colors.line,
+    backgroundColor: colors.card2,
+  },
+  streakDotHot: { borderColor: colors.goldBorder, backgroundColor: colors.goldSoft },
+  streakDotTxt: { fontFamily: fonts.semibold, fontSize: 11.5, color: colors.muted },
+  streakDotTxtHot: { color: colors.gold },
+  streakLine: { width: 12, height: 1, backgroundColor: colors.lineSoft },
+  streakFoot: {
+    fontFamily: fonts.body,
+    fontSize: 13,
+    color: colors.muted2,
+    marginTop: 12,
+  },
+
   sectionLabel: {
     fontFamily: fonts.bold,
     fontSize: 11.5,

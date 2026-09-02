@@ -275,53 +275,73 @@ export const SCREENS = [
       "Maybe you blocked websites, deleted apps or started another streak.",
       "But when the moment came, you were still alone with the urge.",
     ],
-    punch: "You don't need more willpower.",
-    punchSub: "You need help inside the moment.",
+    punch: "Eventually, the pattern starts to feel automatic.",
+    punchSub: "And automatic patterns can be interrupted.",
+    // O diagrama do loop entrou aqui em vez de virar tela própria: depois de
+    // Block/Prayer/Reset ele seria repetição (decisão do Lucas, 02/09).
+    loop: {
+      label: "The loop today",
+      steps: ["Trigger", "Urge", "Fall", "Relief", "Shame"],
+      back: "and back to the trigger.",
+    },
     cta: "Show me how",
-    next: "screen_15_mechanism",
+    next: "screen_15_block",
   },
 
-  /* ---------- 15 , proof #3 (mecanismo) ---------- */
+  /* ---------- 15 , STEP 1: BLOCK ----------
+     Copy conferida contra o que o app faz, que agora são DUAS camadas:
+     o Maximum Protection (perfil de DNS, bloqueia sozinho no aparelho
+     inteiro) e a Intervenção (acionada por ela no momento). A copy fala
+     das duas sem fundir uma na outra, que era a incoerência antiga. ---------- */
   {
-    id: "screen_15_mechanism",
-    type: "MECHANISM",
-    headline: "That's what Stronghold changes.",
-    steps: [
-      { icon: "⚡", label: "TEMPTATION HITS" },
-      { icon: "🔒", label: "Stronghold steps in" },
-      { icon: "🙏", label: "A prayer written for you" },
-      { icon: "⏱", label: "2-minute reset" },
-      { icon: "🛡", label: "Get through the moment" },
-    ],
-    closer: "Not after you fall.",
-    closerSub: "Inside the moment you normally lose control.",
-    proof: "caleb",
-    cta: "Continue",
-    analytics: { view: "onboarding_mechanism_demo_view", personalized: false, proof_id: "caleb" },
-    next: "screen_16_demo",
-  },
-
-  /* ---------- 16 ---------- */
-  {
-    id: "screen_16_demo",
-    type: "PRODUCT_DEMO",
-    headline: "Here's how your Stronghold could respond.",
-    clock: "11:42 PM",
-    momentLabel: "High-risk moment",
-    blockedLabel: "Content blocked",
-    body: "{name}, stay here for a moment.",
-    costLine: "You told us the hardest part is {deepest_cost}.",
-    invite: "Let's come back to Him now.",
-    prayerCta: "Start My Prayer",
-    resetLabel: "Begin Reset",
+    id: "screen_15_block",
+    type: "INTERRUPT",
+    eyebrow: "Step 1",
+    headline: "Interrupt the path",
+    blockedLabel: "Blocked.",
+    body: "Maximum Protection blocks adult sites across your whole phone, quietly, without you doing anything. And when the pull hits anyway, one tap stops the moment before it goes further.",
+    contrastA: "Not after the fall.",
+    contrastB: "Before the cycle continues.",
     cta: "Continue",
     analytics: { view: "onboarding_mechanism_demo_view", personalized: true },
-    next: "screen_17_privacy",
+    next: "screen_16_prayer",
+  },
+
+  /* ---------- 16 , STEP 2: PRAYER ----------
+     A tela mais importante do onboarding. O mockup mostra a oração que o
+     motor de fato escolheu pro perfil dele, não um exemplo. ---------- */
+  {
+    id: "screen_16_prayer",
+    type: "PRAYER_STEP",
+    eyebrow: "Step 2",
+    headline: "Come back to God",
+    stayLine: "stay here for a moment.",
+    costPrefix: "You told us the hardest part of this struggle is",
+    prayerTag: "A prayer written for this exact moment",
+    body: "Built from your trigger, your struggle and what you're fighting for.",
+    cta: "Continue",
+    analytics: { view: "onboarding_mechanism_demo_view", personalized: true },
+    next: "screen_17_reset",
+  },
+
+  /* ---------- 17 , STEP 3: RESET , proof #3 (mecanismo) ---------- */
+  {
+    id: "screen_17_reset",
+    type: "RESET_STEP",
+    eyebrow: "Step 3",
+    headline: "Get through the next 2 minutes",
+    punch: "One practical reset.",
+    body: "A short guided action to help you step out of the automatic pattern and choose differently.",
+    proof: "caleb",
+    proofTag: "The moment",
+    cta: "Continue",
+    analytics: { view: "onboarding_proof_view", proof_id: "caleb" },
+    next: "screen_18_privacy",
   },
 
   /* ---------- 17 ---------- */
   {
-    id: "screen_17_privacy",
+    id: "screen_18_privacy",
     type: "PRIVACY",
     headline: "And nobody needs to know.",
     subheadline: "Your struggle stays private.",
@@ -333,16 +353,6 @@ export const SCREENS = [
     ],
     seal: "Private. No judgment.",
     cta: "Continue",
-    next: "screen_18_bridge",
-  },
-
-  /* ---------- 18 ---------- */
-  {
-    id: "screen_18_bridge",
-    type: "RESULT_BRIDGE",
-    headline: "Thanks, {name}.",
-    subheadline: "We found the pattern Stronghold needs to protect you from.",
-    cta: "See My Recovery Profile",
     next: "screen_19_profile",
   },
 
@@ -392,6 +402,13 @@ export const SCREENS = [
         body: "Strengthen the new pattern and your relationship with God.",
       },
     ],
+    // Marcos iguais aos da Celebration: o que ele vê aqui é o que vai ver
+    // no app depois, não uma ilustração.
+    streak: {
+      label: "Your streak",
+      milestones: ["Day 1", "Day 3", "Day 7", "Day 28", "Day 90"],
+      foot: "Day 1 starts the moment you finish here.",
+    },
     proof: "nathan",
     cta: "Continue",
     analytics: { view: "onboarding_proof_view", proof_id: "nathan" },
@@ -475,6 +492,9 @@ export const SCREENS = [
     type: "PROOF_BRIDGE",
     headline: "You're not the only Christian man fighting this.",
     rating: APP_RATING,
+    // Carrossel com o grupo do funil (cardsPaywall: Caleb, Nathan, Joshua).
+    // A ordem é a das objeções: mecanismo, casamento, Deus.
+    marqueeGroup: "paywall",
     reviews: [
       { id: "joshua", tag: "Faith" },
       { id: "caleb", tag: "The moment" },
@@ -482,7 +502,7 @@ export const SCREENS = [
     ],
     mechanismTitle: "Stronghold was built for the moment other solutions miss.",
     mechanism: [
-      { n: 1, title: "BLOCK", body: "Stop the path before the cycle continues." },
+      { n: 1, title: "STOP", body: "One tap stops the moment before the cycle continues." },
       {
         n: 2,
         title: "PRAY",
@@ -511,7 +531,7 @@ export const SCREENS = [
     ],
     whenTitle: "When temptation hits:",
     features: [
-      { emoji: "🔒", text: "Stronghold blocks the path" },
+      { emoji: "🔒", text: "One tap stops the moment" },
       { emoji: "🙏", text: "Your personalized prayer appears" },
       { emoji: "⏱", text: "Your 2-minute reset begins" },
       { emoji: "📖", text: "Scripture matched to the moment" },
@@ -519,7 +539,13 @@ export const SCREENS = [
     ],
     closer: "It's not about more willpower.",
     closerSub: "It's about having Stronghold there when willpower is weakest.",
-    proof: "daniel",
+    // Segundo carrossel do funil (cardsPaywallSecondary), mesma função que
+    // ele tem lá: "More stories from the brotherhood".
+    marqueeGroup: "brotherhood",
+    proofs: [
+      { id: "daniel", tag: "Faith" },
+      { id: "noah", tag: "The moment" },
+    ],
     cta: "Start My Stronghold",
     terms: "Private purchase · Cancel anytime",
     analytics: { view: "onboarding_paywall_view" },

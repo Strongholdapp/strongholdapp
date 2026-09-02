@@ -132,3 +132,30 @@ export function review(id) {
 }
 
 export default { REVIEWS, REVIEW_PHOTOS, APP_RATING, IDENTITY_LINE, review };
+
+/* ============================================================
+   GRUPOS , espelham exatamente a estratégia do funil (copy.js).
+
+   Não reagrupar por conta própria: a ordem e a regra de badge foram
+   decididas no funil e são deliberadas.
+
+   - early    : cardsSocialProof do funil. Cedo no quiz, SEM badge.
+                "91 days free" antes de a pessoa entender o produto não é
+                crível, e o funil evita isso de propósito.
+   - compact  : cardsCompact, usado no loading do funil.
+   - paywall  : cardsPaywall. Aqui SIM com badge, porque o preço apareceu e
+                a duração vira prova. A ordem é a objeção: mecanismo (Caleb),
+                casamento (Nathan), Deus (Joshua).
+   - brotherhood : cardsPaywallSecondary, o segundo carrossel.
+   ============================================================ */
+export const PROOF_GROUPS = {
+  early: ["ethan", "michael", "aaron"],
+  compact: ["ethan", "caleb"],
+  paywall: ["caleb", "nathan", "joshua"],
+  brotherhood: ["daniel", "noah", "matthew"],
+};
+
+export const PROOF_TITLES = {
+  paywall: "Results that make us proud",
+  brotherhood: "More stories from the brotherhood",
+};

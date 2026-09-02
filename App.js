@@ -31,6 +31,7 @@ import { hasSuperwall, SUPERWALL_PLACEMENT, PAYWALL_ENABLED } from "./src/lib/en
 import * as A from "./src/lib/analytics";
 import QuizEngine from "./src/onboarding/QuizEngine";
 import { FIRST_SCREEN } from "./src/onboarding/screens";
+import { vars } from "./src/onboarding/derive";
 
 import ProfileScreen from "./src/screens/ProfileScreen";
 import PlanScreen from "./src/screens/PlanScreen";
@@ -39,6 +40,7 @@ import HomeScreen from "./src/screens/HomeScreen";
 import InterventionScreen from "./src/screens/InterventionScreen";
 import SOSScreen from "./src/screens/SOSScreen";
 import BrowserScreen from "./src/screens/BrowserScreen";
+import MaxProtectionScreen from "./src/screens/MaxProtectionScreen";
 import ReturnScreen from "./src/screens/ReturnScreen";
 import BrotherhoodScreen from "./src/screens/BrotherhoodScreen";
 import YouScreen from "./src/screens/YouScreen";
@@ -80,24 +82,36 @@ function Router() {
         onFinish={async () => {
           setPayingBusy(true);
           const profile = state.profile || {};
+
+          // Build sem paywall (desenvolvimento, gravação de anúncio): segue direto.
           if (!PAYWALL_ENABLED || !hasSuperwall()) {
             A.purchaseResult("skipped_no_key");
             setPayingBusy(false);
             completeOnboarding();
             return;
           }
+
+          // vars() traduz as chaves do quiz ("alone", "loneliness") nos rótulos
+          // que a pessoa leu na tela ("When I'm alone", "Loneliness"), com
+          // fallback neutro quando falta resposta. Sem isso o paywall
+          // personalizado mostraria a chave crua.
+          const v = vars(profile);
           const res = await presentPaywall(SUPERWALL_PLACEMENT, {
-            firstName: profile.name,
-            trigger: profile.primary_trigger,
-            dangerMoment: profile.primary_danger_moment,
-            desire: profile.primary_desire,
+            firstName: v.name,
+            trigger: v.primary_trigger,
+            dangerMoment: v.primary_danger_moment,
+            desire: v.primary_desire,
           });
           setPayingBusy(false);
+
+          // Só entra quem tem direito. Fechar o paywall sem assinar mantém a
+          // pessoa aqui, e ela pode tentar de novo pelo mesmo botão.
           if (res.granted) {
             A.purchaseResult("success");
             completeOnboarding();
             return;
           }
+
           A.purchaseResult(res.skipped ? "fail" : "cancel", { error: res.error || null });
         }}
       />
@@ -121,6 +135,7 @@ function Router() {
     case "sos":
       return needsPlan(SOSScreen);
     case "protection":
+      return needsPlan(MaxProtectionScreen);
     case "browser":
       return needsPlan(BrowserScreen);
     case "return":

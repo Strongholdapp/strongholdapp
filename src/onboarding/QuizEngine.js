@@ -16,6 +16,7 @@ import { SCREENS, SCREEN_BY_ID, FIRST_SCREEN, indexOf } from "./screens";
 import { derivePrimaryDangerMoment, ninetyDayDate, cleanName, prayerContext } from "./derive";
 import * as A from "../lib/analytics";
 import { requestPermission } from "../lib/notifications";
+import { InterruptStep, PrayerStep, ResetStep } from "./components/MockScreens";
 
 import {
   WelcomeScreen,
@@ -67,10 +68,11 @@ export default function QuizEngine({
     if (screen.analytics && screen.analytics.proof_id) {
       A.proofView(screen.analytics.proof_id, screenId);
     }
-    if (screen.type === "MECHANISM") A.mechanismDemoView(screenId, false);
-    if (screen.type === "PRODUCT_DEMO") A.mechanismDemoView(screenId, true);
+    if (screen.type === "INTERRUPT" || screen.type === "PRAYER_STEP" || screen.type === "RESET_STEP") {
+      A.mechanismDemoView(screenId, true);
+    }
     if (screen.type === "RECOVERY_PROFILE") A.recoveryProfileView(profile);
-    if (screen.type === "PAYWALL") A.paywallView("onboarding_v3", profile);
+    if (screen.type === "PAYWALL") A.paywallView("onboarding_v4", profile);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [screenId]);
 
@@ -113,7 +115,13 @@ export default function QuizEngine({
       merged.ninety_day_date = ninetyDayDate(merged.started_at);
       merged.prayer_context = prayerContext(merged);
 
-      if (screen.store) A.answerSubmitted(screenId, value, extra);
+      // O nome nunca sai do aparelho. Ele é a única resposta do quiz que
+      // identifica a pessoa, e a política de privacidade promete que ele fica
+      // local. Mandamos só o fato de que a tela foi respondida.
+      if (screen.store) {
+        const reported = screen.store === "name" ? "[redacted]" : value;
+        A.answerSubmitted(screenId, reported, extra);
+      }
       if (screen.analytics && screen.analytics.submit === "onboarding_first_goal_selected") {
         A.firstGoalSelected(value);
       }
@@ -216,9 +224,10 @@ export default function QuizEngine({
           />
         );
 
-      case "MECHANISM":
+      /* --- V4: o mecanismo virou sequência de três telas com mockup --- */
+      case "INTERRUPT":
         return (
-          <MechanismScreen
+          <InterruptStep
             screen={screen}
             profile={profile}
             onNext={() => goTo(screen.next)}
@@ -226,9 +235,19 @@ export default function QuizEngine({
           />
         );
 
-      case "PRODUCT_DEMO":
+      case "PRAYER_STEP":
         return (
-          <ProductDemo
+          <PrayerStep
+            screen={screen}
+            profile={profile}
+            onNext={() => goTo(screen.next)}
+            onBack={onBack}
+          />
+        );
+
+      case "RESET_STEP":
+        return (
+          <ResetStep
             screen={screen}
             profile={profile}
             onNext={() => goTo(screen.next)}

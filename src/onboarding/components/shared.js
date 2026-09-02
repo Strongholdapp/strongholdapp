@@ -13,7 +13,7 @@ import { View, Text, Image, StyleSheet, Animated, Pressable, ScrollView } from "
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Dusk, Brand, Progress } from "../../components/ui";
 import { colors, fonts, radius, spacing } from "../../theme/theme";
-import { REVIEWS, REVIEW_PHOTOS } from "../proof";
+import { REVIEWS, REVIEW_PHOTOS, PROOF_GROUPS, PROOF_TITLES } from "../proof";
 
 /* ---------- Entrada em stagger ---------- */
 export function Reveal({ children, index = 0, delay = 110, style, from = 10 }) {
@@ -64,6 +64,58 @@ export function ProofCard({ id, tag, compact }) {
           </View>
         ) : null}
       </View>
+    </View>
+  );
+}
+
+
+/* ---------- Carrossel de depoimentos ----------
+   Mesmo formato do funil (reviewMarqueeHTML): cards lado a lado, deslize
+   horizontal. `group` puxa de PROOF_GROUPS, então a estratégia de quem
+   aparece onde mora em proof.js, num lugar só.
+
+   hideBadges existe porque o funil não mostra "91 days free" no começo do
+   quiz de propósito: prova de duração antes de a pessoa entender o produto
+   soa inventada. Cedo sem badge, no paywall com badge. ---------- */
+export function ProofMarquee({ group, title, hideBadges }) {
+  const ids = (PROOF_GROUPS[group] || []).filter((id) => REVIEWS[id]);
+  if (!ids.length) return null;
+  const heading = title || PROOF_TITLES[group];
+
+  return (
+    <View style={{ marginTop: 18 }}>
+      {heading ? <Text style={st.marqueeTitle}>{heading}</Text> : null}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        decelerationRate="fast"
+        snapToInterval={286}
+        contentContainerStyle={{ paddingRight: 8 }}
+      >
+        {ids.map((id) => {
+          const r = REVIEWS[id];
+          const photo = REVIEW_PHOTOS[r.photo];
+          return (
+            <View key={id} style={st.marqueeCard}>
+              <Text style={st.proofText} numberOfLines={7}>
+                “{r.text}”
+              </Text>
+              <View style={st.proofFoot}>
+                {photo ? <Image source={photo} style={st.proofPhoto} /> : null}
+                <View style={{ flex: 1 }}>
+                  <Text style={st.proofName}>{r.name}</Text>
+                  <Text style={st.proofLoc}>{r.location}</Text>
+                </View>
+              </View>
+              {!hideBadges && r.badge ? (
+                <View style={[st.proofBadge, { alignSelf: "flex-start", marginTop: 10 }]}>
+                  <Text style={st.proofBadgeTxt}>{r.badge}</Text>
+                </View>
+              ) : null}
+            </View>
+          );
+        })}
+      </ScrollView>
     </View>
   );
 }
@@ -163,6 +215,23 @@ export const st = StyleSheet.create({
   },
   sub: { fontFamily: fonts.body, fontSize: 15.5, lineHeight: 23, color: colors.muted, marginTop: 10 },
 
+  marqueeTitle: {
+    fontFamily: fonts.bold,
+    fontSize: 11.5,
+    letterSpacing: 1.4,
+    color: colors.gold,
+    marginBottom: 12,
+  },
+  marqueeCard: {
+    width: 274,
+    marginRight: 12,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.line,
+    borderRadius: radius.lg,
+    padding: 16,
+  },
+
   proof: {
     backgroundColor: colors.card,
     borderWidth: 1,
@@ -199,4 +268,4 @@ export const st = StyleSheet.create({
   proofBadgeTxt: { fontFamily: fonts.semibold, fontSize: 11, color: colors.gold },
 });
 
-export default { Reveal, ProofCard, Shell, Head, st };
+export default { Reveal, ProofCard, ProofMarquee, Shell, Head, st };
