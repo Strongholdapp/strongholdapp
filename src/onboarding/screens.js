@@ -29,6 +29,12 @@ export const SCREENS = [
     identityLine: IDENTITY_LINE,
     headline: "Welcome to Stronghold",
     subheadline: "Take a 3-minute quiz to start your journey to freedom.",
+    // O versículo que dá nome ao produto, já na abertura. O mesmo aparece
+    // fechando a tela 19: abre e fecha o onboarding com ele.
+    scripture: {
+      text: "The Lord is a refuge for the oppressed, a stronghold in times of trouble.",
+      ref: "Psalm 9:9",
+    },
     cta: "Start Quiz",
     secondary: "Already have an account? Log in",
     analytics: { view: "onboarding_screen_view", submit: "onboarding_start_quiz_tap" },

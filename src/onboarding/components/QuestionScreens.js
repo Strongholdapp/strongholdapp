@@ -65,10 +65,21 @@ export function WelcomeScreen({ screen, onNext, profile }) {
         <Reveal index={3}>
           <Text style={s.welcomeSub}>{fill(screen.subheadline, profile)}</Text>
         </Reveal>
+
+        {/* Versículo que dá nome ao produto, abrindo o onboarding. */}
+        {screen.scripture ? (
+          <Reveal index={4} delay={220}>
+            <View style={s.welcomeScripture}>
+              <View style={s.welcomeRule} />
+              <Text style={s.welcomeScriptureText}>“{screen.scripture.text}”</Text>
+              <Text style={s.welcomeScriptureRef}>{screen.scripture.ref}</Text>
+            </View>
+          </Reveal>
+        ) : null}
       </View>
 
       <View style={{ position: "absolute", left: 0, right: 0, bottom: 24 }}>
-        <Reveal index={4}>
+        <Reveal index={5}>
           <Btn title={screen.cta} onPress={() => onNext()} />
           <Pressable onPress={() => onNext()} hitSlop={10}>
             <Text style={s.secondary}>{screen.secondary}</Text>
@@ -325,6 +336,27 @@ const s = StyleSheet.create({
     textAlign: "center",
     marginTop: 12,
     maxWidth: 300,
+  },
+  welcomeScripture: { alignItems: "center", marginTop: 30, maxWidth: 320 },
+  welcomeRule: {
+    width: 34,
+    height: 1,
+    backgroundColor: colors.goldBorder,
+    marginBottom: 16,
+  },
+  welcomeScriptureText: {
+    fontFamily: fonts.serifItalic,
+    fontSize: 15,
+    lineHeight: 24,
+    color: colors.muted,
+    textAlign: "center",
+  },
+  welcomeScriptureRef: {
+    fontFamily: fonts.semibold,
+    fontSize: 12,
+    letterSpacing: 0.6,
+    color: colors.gold,
+    marginTop: 10,
   },
   secondary: {
     fontFamily: fonts.semibold,
