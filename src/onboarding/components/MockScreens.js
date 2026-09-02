@@ -3,17 +3,23 @@
 
    INTERRUPT · PRAYER_STEP · RESET_STEP
 
-   Regra que vale pras três: o "mockup" NÃO é imagem. É a tela do app
-   renderizada em miniatura, com os dados DELE. A tela da oração precisa
-   mostrar o nome real e o custo que ele respondeu, e a oração que aparece
-   é a que o motor de fato escolheu pro perfil dele, não um exemplo. Se um
-   dia alguém mudar a Intervenção, o mockup muda junto: ele não tem como
-   divergir do produto, que é o problema de print estático.
+   Regra que vale pras três: o "print" NÃO é imagem. É a tela do app
+   renderizada em miniatura dentro de uma moldura de iPhone (barra de
+   status, ilha dinâmica, indicador de home), com os dados DELE.
+
+   Por que renderizado e não PNG (pedido do Lucas de 02/09):
+   um PNG fica idêntico ao app no dia em que foi tirado e mentira no dia
+   seguinte. Renderizado, o print não tem como divergir: a notificação sai
+   de `reminderCopy()` , a MESMA função que agenda a notificação de
+   verdade , e a tela de bloqueio espelha a InterventionScreen, inclusive
+   o botão "Continue to My Prayer". Se alguém mudar o produto, o print
+   muda junto. E continua mostrando o nome e o contexto da pessoa, que era
+   o outro pedido dele (item 17).
 
    Regra de copy (do PRD do Lucas): não prometer comportamento que o app
-   não tem. O app NÃO bloqueia conteúdo do sistema e NÃO detecta tentação
-   sozinho. Quem dispara é a pessoa, no botão de pânico ou no SOS. A tela
-   1 diz isso com todas as letras.
+   não tem. O bloqueio de sistema é a Maximum Protection (perfil de DNS,
+   instalado pela pessoa e removível nos Ajustes com a senha do aparelho).
+   Nada aqui pode dizer que é impossível de desativar.
    ============================================================ */
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
@@ -21,23 +27,61 @@ import { View, Text, StyleSheet, Animated, Easing } from "react-native";
 import { Btn, Pill } from "../../components/ui";
 import { colors, fonts, radius } from "../../theme/theme";
 import { Shell, Head, Reveal, ProofCard, st as sh } from "./shared";
-import { labelFor, edgeCopy, toLegacyAnswers } from "../derive";
+import { labelFor, edgeCopy, toLegacyAnswers, cleanName } from "../derive";
 import { build } from "../../engine/planEngine";
+import { reminderCopy } from "../../lib/notifications";
 
-/* ------------------------------------------------------------
-   Moldura: a "telinha" do app dentro da tela do onboarding.
-   ------------------------------------------------------------ */
-function PhoneMock({ children, time, tag, tagTone = "red" }) {
+/* ============================================================
+   MOLDURA , o que faz a coisa parecer print e não bloco
+   ============================================================ */
+
+/** Barra de status do iOS. Desenhada com View pra renderizar igual em
+ *  qualquer aparelho (glifo unicode de bateria/wifi varia demais). */
+function StatusBar({ time }) {
   return (
-    <View style={s.phone}>
-      <View style={s.notch} />
-      {time || tag ? (
-        <View style={s.phoneTop}>
-          <Text style={s.clock}>{time}</Text>
-          {tag ? <Pill tone={tagTone}>{tag}</Pill> : null}
+    <View style={s.statusBar}>
+      <Text style={s.statusTime} numberOfLines={1}>
+        {time}
+      </Text>
+      <View style={s.island} />
+      <View style={s.statusRight}>
+        <View style={s.bars}>
+          <View style={[s.bar, { height: 4 }]} />
+          <View style={[s.bar, { height: 6 }]} />
+          <View style={[s.bar, { height: 8 }]} />
+          <View style={[s.bar, { height: 10, opacity: 0.35 }]} />
         </View>
-      ) : null}
-      <View style={{ paddingHorizontal: 14, paddingBottom: 16 }}>{children}</View>
+        <View style={s.wifi} />
+        <View style={s.batt}>
+          <View style={s.battFill} />
+          <View style={s.battTip} />
+        </View>
+      </View>
+    </View>
+  );
+}
+
+function HomeIndicator() {
+  return (
+    <View style={s.homeWrap}>
+      <View style={s.homeBar} />
+    </View>
+  );
+}
+
+/**
+ * A "telinha": bezel escuro, cantos de iPhone, status bar e indicador de
+ * home. `bare` tira o padding interno pra tela poder encostar nas bordas
+ * (é o caso do bloqueio, que tem barra de navegador em cima).
+ */
+function Device({ children, time, bare = false, style }) {
+  return (
+    <View style={[s.bezel, style]}>
+      <View style={s.screen}>
+        <StatusBar time={time} />
+        <View style={bare ? null : s.screenPad}>{children}</View>
+        <HomeIndicator />
+      </View>
     </View>
   );
 }
@@ -60,11 +104,105 @@ function riskTag(profile) {
 }
 
 /* ============================================================
+   PRINT 1 , A NOTIFICAÇÃO
+   Texto e horário saem de reminderCopy(), a mesma função que agenda a
+   notificação real. Não tem como o print prometer uma coisa e o app
+   mandar outra.
+   ============================================================ */
+function NotificationPrint({ profile, label }) {
+  const name = cleanName(profile && profile.name);
+  const n = useMemo(() => reminderCopy(profile, name), [profile, name]);
+
+  return (
+    <View>
+      <Text style={s.printLabel}>{label}</Text>
+      <Device time={n.time}>
+        <View style={s.lockWrap}>
+          <View style={s.notif}>
+            <View style={s.notifHead}>
+              <View style={s.appIcon}>
+                <Text style={s.appIconTxt}>✝</Text>
+              </View>
+              <Text style={s.notifApp}>STRONGHOLD</Text>
+              <Text style={s.notifWhen}>now</Text>
+            </View>
+            <Text style={s.notifTitle}>{n.title}</Text>
+            <Text style={s.notifBody} numberOfLines={3}>
+              {n.body}
+            </Text>
+          </View>
+        </View>
+      </Device>
+    </View>
+  );
+}
+
+/* ============================================================
+   PRINT 2 , O BLOQUEIO DE CONTEÚDO
+   Espelha a InterventionScreen (StepBlock): barra do navegador, folha
+   subindo, os três selos e o botão que leva pra oração dele , que foi
+   exatamente o que o Lucas descreveu no áudio.
+   ============================================================ */
+function BlockPrint({ profile, label, blockedLabel }) {
+  const hr = (labelFor("danger_moments", profile && profile.primary_danger_moment) || "")
+    .toLowerCase();
+  const tr = (labelFor("primary_trigger", profile && profile.primary_trigger) || "").toLowerCase();
+
+  return (
+    <View>
+      <Text style={s.printLabel}>{label}</Text>
+      <Device bare>
+        {/* barra do navegador */}
+        <View style={s.browserBar}>
+          <Text style={s.browserIco}>‹ ›</Text>
+          <View style={s.browserUrl}>
+            <Text style={s.browserUrlTxt}>⚠ Protected Website</Text>
+          </View>
+          <Text style={s.browserIco}>⤴</Text>
+        </View>
+
+        {/* Faixa fina em vez de card grande: o que importa nesta telinha é o
+            botão que leva pra oração ficar visível sem rolar. */}
+        <View style={s.blockGap}>
+          <View style={s.blockBadge}>
+            <Text style={s.blockBadgeIcon}>🔒</Text>
+            <Text style={s.blockBadgeTxt}>{blockedLabel || "Blocked."}</Text>
+          </View>
+        </View>
+
+        {/* a folha da Intervenção */}
+        <View style={s.sheet}>
+          <View style={s.grab} />
+          <View style={s.sheetTop}>
+            <Pill tone="gold">Active</Pill>
+          </View>
+          <Text style={s.sheetTitle}>
+            Stronghold <Text style={s.sheetTitleGold}>stepped in.</Text>
+          </Text>
+          {hr && tr ? (
+            <Text style={s.sheetBody} numberOfLines={2}>
+              You told us {hr} and {tr} often come right before your difficult moments.
+            </Text>
+          ) : null}
+          <View style={s.sheetPills}>
+            <Pill tone="red">⊗ Site blocked</Pill>
+            <Pill tone="gold">Pattern recognized</Pill>
+          </View>
+          <View style={s.fakeBtn}>
+            <Text style={s.fakeBtnTxt}>Continue to My Prayer</Text>
+          </View>
+        </View>
+      </Device>
+    </View>
+  );
+}
+
+/* ============================================================
    STEP 1 , INTERRUPT
+   Os dois prints que o Lucas pediu: a notificação e o bloqueio.
    ============================================================ */
 export function InterruptStep({ screen, profile, onNext, onBack }) {
-  const time = useClock();
-  const tag = riskTag(profile);
+  const L = screen.printLabels || {};
 
   return (
     <Shell
@@ -75,19 +213,22 @@ export function InterruptStep({ screen, profile, onNext, onBack }) {
       <Head eyebrow={screen.eyebrow} headline={screen.headline} serif />
 
       <Reveal index={0}>
-        <PhoneMock time={time} tag={tag}>
-          <View style={s.blockCard}>
-            <Text style={s.blockIcon}>🔒</Text>
-            <Text style={s.blockWord}>{screen.blockedLabel}</Text>
-          </View>
-        </PhoneMock>
+        <NotificationPrint profile={profile} label={L.notification || "The reminder"} />
       </Reveal>
 
-      <Reveal index={1} delay={200}>
+      <Reveal index={1} delay={220}>
+        <BlockPrint
+          profile={profile}
+          label={L.block || "The block"}
+          blockedLabel={screen.blockedLabel}
+        />
+      </Reveal>
+
+      <Reveal index={2} delay={220}>
         <Text style={s.stepBody}>{screen.body}</Text>
       </Reveal>
 
-      <Reveal index={2} delay={200}>
+      <Reveal index={3} delay={220}>
         <View style={s.contrast}>
           <Text style={s.contrastMuted}>{screen.contrastA}</Text>
           <Text style={s.contrastStrong}>{screen.contrastB}</Text>
@@ -102,6 +243,7 @@ export function InterruptStep({ screen, profile, onNext, onBack }) {
    A tela mais importante do onboarding: é onde o diferencial aparece.
    ============================================================ */
 export function PrayerStep({ screen, profile, onNext, onBack }) {
+  const time = useClock();
   const name = (profile && profile.name) || "";
   const cost = labelFor("deepest_cost", profile.deepest_cost);
 
@@ -129,7 +271,7 @@ export function PrayerStep({ screen, profile, onNext, onBack }) {
       <Head eyebrow={screen.eyebrow} headline={screen.headline} serif />
 
       <Reveal index={0}>
-        <PhoneMock>
+        <Device time={time}>
           <Text style={s.prayerHi}>
             {name ? `${name}, ${screen.stayLine}` : cap(screen.stayLine)}
           </Text>
@@ -147,7 +289,7 @@ export function PrayerStep({ screen, profile, onNext, onBack }) {
           {prayer && prayer.verse ? (
             <Text style={s.prayerVerse}>{prayer.verse}</Text>
           ) : null}
-        </PhoneMock>
+        </Device>
       </Reveal>
 
       <Reveal index={1} delay={200}>
@@ -161,6 +303,7 @@ export function PrayerStep({ screen, profile, onNext, onBack }) {
    STEP 3 , RESET
    ============================================================ */
 export function ResetStep({ screen, profile, onNext, onBack }) {
+  const time = useClock();
   const reset = useMemo(() => {
     try {
       const plan = build(toLegacyAnswers(profile));
@@ -181,7 +324,7 @@ export function ResetStep({ screen, profile, onNext, onBack }) {
       <Head eyebrow={screen.eyebrow} headline={screen.headline} serif />
 
       <Reveal index={0}>
-        <PhoneMock>
+        <Device time={time}>
           <Ticker />
           {reset && reset.title ? <Text style={s.resetTitle}>{reset.title}</Text> : null}
           {steps.map((t, i) => (
@@ -192,7 +335,7 @@ export function ResetStep({ screen, profile, onNext, onBack }) {
               <Text style={s.resetStep}>{t}</Text>
             </View>
           ))}
-        </PhoneMock>
+        </Device>
       </Reveal>
 
       <Reveal index={1} delay={200}>
@@ -227,43 +370,58 @@ function Ticker() {
   );
 }
 
-
 /* ============================================================
-   MiniMocks , a montagem dos três mockups da tela de proof final.
+   MiniMocks , a montagem dos três prints da tela de proof final.
 
-   Mesma regra das telas grandes: nada de imagem. São as três telas do
-   produto em miniatura, com o nome real e o streak real da pessoa, então
-   a montagem não tem como divergir do app.
+   Mesma regra e mesma moldura das telas grandes, em miniatura: bloqueio,
+   oração com o nome real e o streak. É o "montagem bonita com 3 mockups"
+   do item 29 do Lucas.
    ============================================================ */
 export function MiniMocks({ profile, labels }) {
-  const name = (profile && profile.name) || "";
+  const name = cleanName(profile && profile.name) || "";
   const L = labels || {};
   return (
     <View style={s.miniRow}>
-      <View style={s.mini}>
-        <View style={s.miniNotch} />
-        <View style={s.miniBlock}>
-          <Text style={s.miniIcon}>🔒</Text>
+      <View style={s.miniCol}>
+        <View style={s.miniBezel}>
+          <View style={s.miniScreen}>
+            <View style={s.miniIsland} />
+            <View style={s.miniBlock}>
+              <Text style={s.miniIcon}>🔒</Text>
+              <Text style={s.miniBlockTxt}>Blocked.</Text>
+            </View>
+            <View style={s.miniHome} />
+          </View>
         </View>
         <Text style={s.miniLabel}>{L.block || "Blocked"}</Text>
       </View>
 
-      <View style={s.mini}>
-        <View style={s.miniNotch} />
-        <View style={s.miniBody}>
-          <Text style={s.miniIcon}>🙏</Text>
-          <Text style={s.miniPrayer} numberOfLines={3}>
-            {name ? `${name}, stay here for a moment.` : "Stay here for a moment."}
-          </Text>
+      <View style={s.miniCol}>
+        <View style={s.miniBezel}>
+          <View style={s.miniScreen}>
+            <View style={s.miniIsland} />
+            <View style={s.miniBody}>
+              <Text style={s.miniIcon}>🙏</Text>
+              <Text style={s.miniPrayer} numberOfLines={3}>
+                {name ? `${name}, stay here for a moment.` : "Stay here for a moment."}
+              </Text>
+            </View>
+            <View style={s.miniHome} />
+          </View>
         </View>
         <Text style={s.miniLabel}>{L.pray || "Your prayer"}</Text>
       </View>
 
-      <View style={s.mini}>
-        <View style={s.miniNotch} />
-        <View style={s.miniBody}>
-          <Text style={s.miniDay}>1</Text>
-          <Text style={s.miniDayLabel}>DAY</Text>
+      <View style={s.miniCol}>
+        <View style={s.miniBezel}>
+          <View style={s.miniScreen}>
+            <View style={s.miniIsland} />
+            <View style={s.miniBody}>
+              <Text style={s.miniDay}>1</Text>
+              <Text style={s.miniDayLabel}>DAY</Text>
+            </View>
+            <View style={s.miniHome} />
+          </View>
         </View>
         <Text style={s.miniLabel}>{L.progress || "Your streak"}</Text>
       </View>
@@ -292,49 +450,304 @@ function cap(t) {
 }
 
 const s = StyleSheet.create({
-  miniRow: { flexDirection: "row", gap: 8, marginTop: 18 },
-  mini: { flex: 1, alignItems: "center" },
-  miniNotch: {
-    width: 22,
+  /* ---------- moldura ---------- */
+  bezel: {
+    marginTop: 16,
+    borderRadius: 30,
+    borderWidth: 5,
+    borderColor: "#0a0908",
+    backgroundColor: "#0a0908",
+    overflow: "hidden",
+  },
+  screen: {
+    borderRadius: 25,
+    overflow: "hidden",
+    backgroundColor: "#14100c",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.07)",
+  },
+  screenPad: { paddingHorizontal: 14, paddingBottom: 6 },
+
+  statusBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingTop: 9,
+    paddingBottom: 5,
+  },
+  statusTime: { fontFamily: fonts.bold, fontSize: 12, color: colors.ink, width: 60 },
+  island: {
+    width: 62,
+    height: 16,
+    borderRadius: 10,
+    backgroundColor: "#000",
+  },
+  statusRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    width: 60,
+    justifyContent: "flex-end",
+  },
+  bars: { flexDirection: "row", alignItems: "flex-end", gap: 1.5 },
+  bar: { width: 2.5, borderRadius: 1, backgroundColor: colors.ink },
+  // Triângulo (o "leque" do wifi). Arco de verdade não sai limpo em RN.
+  wifi: {
+    width: 0,
+    height: 0,
+    borderLeftWidth: 5.5,
+    borderRightWidth: 5.5,
+    borderBottomWidth: 9,
+    borderLeftColor: "transparent",
+    borderRightColor: "transparent",
+    borderBottomColor: colors.ink,
+  },
+  batt: {
+    width: 17,
+    height: 9,
+    borderRadius: 2.5,
+    borderWidth: 1,
+    borderColor: "rgba(244,241,232,0.55)",
+    padding: 1.5,
+    flexDirection: "row",
+  },
+  battFill: { flex: 0.7, borderRadius: 1, backgroundColor: colors.ink },
+  battTip: {
+    position: "absolute",
+    right: -3,
+    top: 3,
+    width: 1.5,
     height: 3,
+    borderRadius: 1,
+    backgroundColor: "rgba(244,241,232,0.55)",
+  },
+
+  homeWrap: { alignItems: "center", paddingTop: 6, paddingBottom: 7 },
+  homeBar: {
+    width: 96,
+    height: 4,
     borderRadius: 2,
-    backgroundColor: "rgba(255,255,255,0.16)",
-    marginBottom: 8,
+    backgroundColor: "rgba(255,255,255,0.28)",
+  },
+
+  printLabel: {
+    fontFamily: fonts.bold,
+    fontSize: 10.5,
+    letterSpacing: 1.4,
+    color: colors.muted2,
+    marginTop: 16,
+    textTransform: "uppercase",
+  },
+
+  /* ---------- print 1: notificação ---------- */
+  lockWrap: { paddingTop: 0, paddingBottom: 4 },
+  lockTime: {
+    fontFamily: fonts.extrabold,
+    fontSize: 30,
+    color: colors.ink,
+    textAlign: "center",
+    letterSpacing: -0.5,
+  },
+  notif: {
+    marginTop: 8,
+    borderRadius: 16,
+    padding: 11,
+    backgroundColor: "rgba(255,255,255,0.10)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.13)",
+  },
+  notifHead: { flexDirection: "row", alignItems: "center", gap: 7 },
+  appIcon: {
+    width: 18,
+    height: 18,
+    borderRadius: 4.5,
+    backgroundColor: colors.gold,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  appIconTxt: { fontSize: 11, color: colors.onGold, fontFamily: fonts.bold },
+  notifApp: {
+    flex: 1,
+    fontFamily: fonts.semibold,
+    fontSize: 10,
+    letterSpacing: 0.8,
+    color: colors.muted,
+  },
+  notifWhen: { fontFamily: fonts.body, fontSize: 10, color: colors.muted2 },
+  notifTitle: {
+    fontFamily: fonts.bold,
+    fontSize: 13.5,
+    color: colors.ink,
+    marginTop: 8,
+  },
+  notifBody: {
+    fontFamily: fonts.body,
+    fontSize: 12.5,
+    lineHeight: 18,
+    color: colors.muted,
+    marginTop: 3,
+  },
+
+  /* ---------- print 2: bloqueio ---------- */
+  browserBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingBottom: 8,
+  },
+  browserIco: { fontSize: 12, color: colors.muted2 },
+  browserUrl: {
+    flex: 1,
+    borderRadius: 8,
+    paddingVertical: 5,
+    alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.07)",
+  },
+  browserUrlTxt: { fontFamily: fonts.medium, fontSize: 10.5, color: colors.muted },
+  blockGap: { alignItems: "center", paddingVertical: 8, paddingHorizontal: 12 },
+  blockBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
+    paddingVertical: 7,
+    paddingHorizontal: 16,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: "rgba(214,86,76,0.42)",
+    backgroundColor: "rgba(214,86,76,0.10)",
+  },
+  blockBadgeIcon: { fontSize: 13 },
+  blockBadgeTxt: {
+    fontFamily: fonts.bold,
+    fontSize: 12.5,
+    color: colors.ink,
+  },
+  sheet: {
+    backgroundColor: colors.sheet,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingHorizontal: 14,
+    paddingTop: 6,
+    paddingBottom: 10,
+    borderTopWidth: 1,
+    borderColor: "rgba(255,255,255,0.08)",
+  },
+  grab: {
+    alignSelf: "center",
+    width: 34,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "rgba(255,255,255,0.20)",
+    marginBottom: 10,
+  },
+  sheetTop: { flexDirection: "row", justifyContent: "flex-end" },
+  sheetTitle: {
+    fontFamily: fonts.serif,
+    fontSize: 18,
+    color: colors.ink,
+    marginTop: 6,
+  },
+  sheetTitleGold: { fontFamily: fonts.serifItalic, color: colors.gold },
+  sheetSub: {
+    fontFamily: fonts.semibold,
+    fontSize: 12.5,
+    color: colors.muted,
+    marginTop: 6,
+  },
+  sheetBody: {
+    fontFamily: fonts.body,
+    fontSize: 12,
+    lineHeight: 18,
+    color: colors.muted2,
+    marginTop: 6,
+  },
+  sheetPills: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 8 },
+  fakeBtn: {
+    marginTop: 9,
+    borderRadius: radius.pill,
+    backgroundColor: colors.gold,
+    paddingVertical: 11,
+    alignItems: "center",
+  },
+  fakeBtnTxt: { fontFamily: fonts.bold, fontSize: 13, color: colors.onGold },
+
+  /* ---------- mini montagem ---------- */
+  miniRow: { flexDirection: "row", gap: 8, marginTop: 18 },
+  miniCol: { flex: 1, alignItems: "center" },
+  miniBezel: {
+    width: "100%",
+    borderRadius: 14,
+    borderWidth: 2.5,
+    borderColor: "#0a0908",
+    backgroundColor: "#0a0908",
+    overflow: "hidden",
+  },
+  miniScreen: {
+    borderRadius: 11,
+    overflow: "hidden",
+    backgroundColor: "#14100c",
+    paddingTop: 5,
+    paddingHorizontal: 5,
+    paddingBottom: 4,
+  },
+  miniIsland: {
+    alignSelf: "center",
+    width: 26,
+    height: 6,
+    borderRadius: 4,
+    backgroundColor: "#000",
+    marginBottom: 5,
+  },
+  miniHome: {
+    alignSelf: "center",
+    width: 30,
+    height: 2.5,
+    borderRadius: 2,
+    backgroundColor: "rgba(255,255,255,0.28)",
+    marginTop: 5,
   },
   miniBlock: {
     width: "100%",
-    height: 92,
-    borderRadius: 14,
+    height: 86,
+    borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
     borderColor: "rgba(214,86,76,0.42)",
     backgroundColor: "rgba(214,86,76,0.10)",
   },
+  miniBlockTxt: {
+    fontFamily: fonts.bold,
+    fontSize: 9.5,
+    color: colors.ink,
+    marginTop: 4,
+  },
   miniBody: {
     width: "100%",
-    height: 92,
-    borderRadius: 14,
+    height: 86,
+    borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 8,
+    paddingHorizontal: 6,
     borderWidth: 1,
     borderColor: colors.line,
     backgroundColor: colors.card2,
   },
-  miniIcon: { fontSize: 20 },
+  miniIcon: { fontSize: 18 },
   miniPrayer: {
     fontFamily: fonts.serifItalic,
-    fontSize: 10.5,
-    lineHeight: 15,
+    fontSize: 9.5,
+    lineHeight: 13,
     color: colors.ink,
     textAlign: "center",
-    marginTop: 6,
+    marginTop: 5,
   },
-  miniDay: { fontFamily: fonts.extrabold, fontSize: 30, color: colors.gold },
+  miniDay: { fontFamily: fonts.extrabold, fontSize: 28, color: colors.gold },
   miniDayLabel: {
     fontFamily: fonts.bold,
-    fontSize: 9,
+    fontSize: 8.5,
     letterSpacing: 1.4,
     color: colors.muted2,
     marginTop: 2,
@@ -347,55 +760,13 @@ const s = StyleSheet.create({
     textAlign: "center",
   },
 
-  phone: {
-    marginTop: 20,
-    borderRadius: 22,
-    borderWidth: 1,
-    borderColor: colors.line,
-    backgroundColor: colors.card2,
-    overflow: "hidden",
-    paddingTop: 10,
-  },
-  notch: {
-    alignSelf: "center",
-    width: 54,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: "rgba(255,255,255,0.16)",
-    marginBottom: 10,
-  },
-  phoneTop: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 14,
-    marginBottom: 12,
-  },
-  clock: { fontFamily: fonts.semibold, fontSize: 15, color: colors.ink },
-
-  blockCard: {
-    alignItems: "center",
-    paddingVertical: 26,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: "rgba(214,86,76,0.42)",
-    backgroundColor: "rgba(214,86,76,0.10)",
-  },
-  blockIcon: { fontSize: 30 },
-  blockWord: {
-    fontFamily: fonts.bold,
-    fontSize: 17,
-    color: colors.ink,
-    marginTop: 10,
-    letterSpacing: 0.2,
-  },
-
+  /* ---------- conteúdo das telas ---------- */
   stepBody: {
     fontFamily: fonts.body,
     fontSize: 15.5,
     lineHeight: 24,
     color: colors.muted,
-    marginTop: 18,
+    marginTop: 20,
   },
   contrast: { marginTop: 14 },
   contrastMuted: { fontFamily: fonts.body, fontSize: 14, color: colors.muted2 },
@@ -406,7 +777,7 @@ const s = StyleSheet.create({
     marginTop: 2,
   },
 
-  prayerHi: { fontFamily: fonts.serif, fontSize: 19, lineHeight: 26, color: colors.ink },
+  prayerHi: { fontFamily: fonts.serif, fontSize: 19, lineHeight: 26, color: colors.ink, marginTop: 6 },
   prayerCost: {
     fontFamily: fonts.body,
     fontSize: 14.5,

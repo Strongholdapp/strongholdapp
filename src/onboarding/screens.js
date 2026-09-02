@@ -299,6 +299,10 @@ export const SCREENS = [
     eyebrow: "Step 1",
     headline: "Interrupt the path",
     blockedLabel: "Blocked.",
+    // Os dois prints que o Lucas pediu no áudio de 02/09: a notificação e a
+    // tela de bloqueio com o botão que leva pra oração. Renderizados a partir
+    // do produto (reminderCopy + InterventionScreen), não imagem.
+    printLabels: { notification: "The reminder, at your hour", block: "The block, in the moment" },
     body: "Maximum Protection blocks adult sites across your whole phone, quietly, without you doing anything. And when the pull hits anyway, one tap stops the moment before it goes further.",
     contrastA: "Not after the fall.",
     contrastB: "Before the cycle continues.",
@@ -367,6 +371,16 @@ export const SCREENS = [
       { emoji: "🙏", label: "Deepest cost", valueFrom: "deepest_cost" },
       { emoji: "🔁", label: "Previous attempts", valueFrom: "quit_attempt_count" },
     ],
+    // Item 19 do Lucas: "só o diagrama trigger -> Stronghold -> different
+    // choice". É o par do loop da tela 14: lá é o ciclo de hoje (Trigger ->
+    // Urge -> Fall -> Relief -> Shame), aqui é o mesmo gatilho terminando
+    // diferente. O primeiro passo usa o gatilho real dele.
+    newLoop: {
+      label: "The loop from here",
+      middle: "Stronghold",
+      end: "A different choice",
+      fallbackStart: "Trigger",
+    },
     closer: "Your pattern is predictable.",
     closerSub: "That makes it interruptible.",
     cta: "Continue",

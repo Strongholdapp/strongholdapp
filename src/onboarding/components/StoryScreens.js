@@ -315,7 +315,27 @@ export function RecoveryProfile({ screen, profile, onNext, onBack }) {
         );
       })}
 
-      <Reveal index={(screen.rows || []).length}>
+      {/* Diagrama da síntese (item 19 do Lucas): o mesmo gatilho, agora
+          terminando diferente. Faz par com o loop da tela 14. */}
+      {screen.newLoop ? (
+        <Reveal index={(screen.rows || []).length} delay={220}>
+          <View style={s.newLoopBox}>
+            <Text style={s.newLoopLabel}>{String(screen.newLoop.label).toUpperCase()}</Text>
+            <View style={s.newLoopRow}>
+              <Text style={s.newLoopStart}>
+                {labelFor("primary_trigger", profile.primary_trigger) ||
+                  screen.newLoop.fallbackStart}
+              </Text>
+              <Text style={s.newLoopArrow}>→</Text>
+              <Text style={s.newLoopMiddle}>{screen.newLoop.middle}</Text>
+              <Text style={s.newLoopArrow}>→</Text>
+              <Text style={s.newLoopEnd}>{screen.newLoop.end}</Text>
+            </View>
+          </View>
+        </Reveal>
+      ) : null}
+
+      <Reveal index={(screen.rows || []).length + 1}>
         <View style={s.profileCloser}>
           <Text style={s.profileCloserTxt}>{screen.closer}</Text>
           <Text style={s.profileCloserGold}>{screen.closerSub}</Text>
@@ -673,6 +693,29 @@ const s = StyleSheet.create({
     padding: 14,
     marginBottom: 4,
   },
+
+  /* ---- diagrama da síntese (tela 19): o loop daqui pra frente ---- */
+  newLoopBox: {
+    marginTop: 18,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.goldBorder,
+    backgroundColor: colors.goldSoft,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+  },
+  newLoopLabel: {
+    fontFamily: fonts.bold,
+    fontSize: 10,
+    letterSpacing: 1.4,
+    color: colors.gold,
+    marginBottom: 10,
+  },
+  newLoopRow: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 7 },
+  newLoopStart: { fontFamily: fonts.semibold, fontSize: 13.5, color: colors.muted },
+  newLoopMiddle: { fontFamily: fonts.bold, fontSize: 13.5, color: colors.gold },
+  newLoopEnd: { fontFamily: fonts.semibold, fontSize: 13.5, color: colors.ink },
+  newLoopArrow: { fontFamily: fonts.body, fontSize: 13, color: colors.muted2 },
 
   /* ---- mini-diagrama do loop (tela do reframe) ---- */
   loopBox: {

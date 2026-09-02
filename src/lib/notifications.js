@@ -80,7 +80,7 @@ export function configureHandler() {
  * Lembrete diário na janela de risco da pessoa. Só agenda se a permissão
  * já foi concedida. O horário sai do primary_danger_moment do onboarding.
  */
-const HOUR_BY_DANGER = {
+export const HOUR_BY_DANGER = {
   late_night: { hour: 22, minute: 30 },
   alone: { hour: 20, minute: 0 },
   stressed: { hour: 18, minute: 30 },
@@ -91,6 +91,29 @@ const HOUR_BY_DANGER = {
   no_pattern: { hour: 21, minute: 0 },
 };
 
+/**
+ * O texto EXATO do lembrete diário e o horário em que ele vai chegar.
+ *
+ * Existe separado porque o mockup da notificação no onboarding (tela 15)
+ * renderiza a partir daqui. É o mesmo motivo de os mockups não serem
+ * imagem: se alguém mudar a copy do lembrete, o "print" que a pessoa viu
+ * antes de comprar muda junto, em vez de virar promessa velha.
+ */
+export function reminderCopy(profile, firstName) {
+  const when =
+    HOUR_BY_DANGER[profile && profile.primary_danger_moment] || HOUR_BY_DANGER.no_pattern;
+  const name = firstName ? `, ${firstName}` : "";
+  const h12 = when.hour % 12 === 0 ? 12 : when.hour % 12;
+  const suffix = when.hour >= 12 ? "PM" : "AM";
+  return {
+    title: "Your difficult window is starting",
+    body: `This is usually when it gets hardest${name}. I'm watching this moment with you. Tap the second you feel the pull.`,
+    hour: when.hour,
+    minute: when.minute,
+    time: `${h12}:${String(when.minute).padStart(2, "0")} ${suffix}`,
+  };
+}
+
 export async function scheduleRiskWindowReminder(profile, firstName) {
   const N = getMod();
   if (!N || Platform.OS === "web") return false;
@@ -99,13 +122,12 @@ export async function scheduleRiskWindowReminder(profile, firstName) {
     if (status !== "granted") return false;
 
     await N.cancelAllScheduledNotificationsAsync();
-    const when = HOUR_BY_DANGER[profile && profile.primary_danger_moment] || HOUR_BY_DANGER.no_pattern;
-    const name = firstName ? `, ${firstName}` : "";
+    const when = reminderCopy(profile, firstName);
 
     await N.scheduleNotificationAsync({
       content: {
-        title: "Your difficult window is starting",
-        body: `This is usually when it gets hardest${name}. I'm watching this moment with you. Tap the second you feel the pull.`,
+        title: when.title,
+        body: when.body,
         sound: true,
       },
       trigger: {
