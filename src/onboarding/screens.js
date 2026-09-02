@@ -365,6 +365,12 @@ export const SCREENS = [
     id: "screen_19_profile",
     type: "RECOVERY_PROFILE",
     eyebrow: "Your recovery profile",
+    // O versículo que dá nome ao produto. Vem do funil web (COPY.result.
+    // scripture), na mesma posição: topo do resultado, antes do perfil.
+    scripture: {
+      text: "The Lord is a refuge for the oppressed, a stronghold in times of trouble.",
+      ref: "Psalm 9:9",
+    },
     rows: [
       { emoji: "🌙", label: "Highest-risk moment", valueFrom: "primary_danger_moment" },
       { emoji: "😣", label: "Main trigger", valueFrom: "primary_trigger" },

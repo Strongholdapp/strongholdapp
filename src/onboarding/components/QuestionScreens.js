@@ -23,7 +23,7 @@ import * as Haptics from "expo-haptics";
 import { Btn } from "../../components/ui";
 import { Logo } from "../../components/Icons";
 import { colors, fonts, radius } from "../../theme/theme";
-import { Shell, Head, Reveal, ProofCard } from "./shared";
+import { Shell, Head, Reveal, ProofCard, Stars } from "./shared";
 import { fill } from "../derive";
 
 const tap = () => Haptics.selectionAsync().catch(() => {});
@@ -49,7 +49,12 @@ export function WelcomeScreen({ screen, onNext, profile }) {
               </Text>
             </View>
           ) : (
-            <Text style={s.identity}>{screen.identityLine}</Text>
+            // Mesmo fallback do funil (`storeProofHTML() || stars-row`): sem
+            // nota real na loja, entra a fileira decorativa de 5 estrelas.
+            <View style={{ alignItems: "center", marginTop: 16 }}>
+              <Text style={s.identity}>{screen.identityLine}</Text>
+              <Stars size={18} center />
+            </View>
           )}
         </Reveal>
 

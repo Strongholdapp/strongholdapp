@@ -41,6 +41,25 @@ export function Reveal({ children, index = 0, delay = 110, style, from = 10 }) {
 }
 
 /* ---------- Depoimento real ---------- */
+/* ---------- Avaliação: 5 estrelas + "5/5" ----------
+   Vem do funil web (reviewCardHTML e as stars-row do quiz.js). Aqui entra
+   como AVALIAÇÃO, com a nota escrita ao lado: nos cards de depoimento fica
+   embaixo, depois do nome, que é a leitura natural de "fulano avaliou".
+
+   Não confundir com a nota da App Store: essa é `screen.rating`, que segue
+   `APP_RATING = null` em proof.js até existir avaliação real na loja. Não
+   preencher com número inventado. ---------- */
+export function Stars({ size = 13, center, style }) {
+  return (
+    <View style={[st.starsRow, center && { justifyContent: "center" }, style]}>
+      <Text accessible={false} importantForAccessibility="no" style={[st.stars, { fontSize: size }]}>
+        ★★★★★
+      </Text>
+      <Text style={[st.starsScore, { fontSize: Math.max(10.5, size - 2) }]}>5/5</Text>
+    </View>
+  );
+}
+
 export function ProofCard({ id, tag, compact }) {
   const r = REVIEWS[id];
   if (!r) return null; // sem depoimento real, não inventa nada
@@ -64,6 +83,8 @@ export function ProofCard({ id, tag, compact }) {
           </View>
         ) : null}
       </View>
+      {/* A avaliação fecha o card, depois de quem avaliou. */}
+      <Stars />
     </View>
   );
 }
@@ -112,6 +133,7 @@ export function ProofMarquee({ group, title, hideBadges }) {
                   <Text style={st.proofBadgeTxt}>{r.badge}</Text>
                 </View>
               ) : null}
+              <Stars />
             </View>
           );
         })}
@@ -232,6 +254,14 @@ export const st = StyleSheet.create({
     padding: 16,
   },
 
+  starsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
+    marginTop: 12,
+  },
+  stars: { color: colors.gold, letterSpacing: 2 },
+  starsScore: { fontFamily: fonts.semibold, color: colors.muted },
   proof: {
     backgroundColor: colors.card,
     borderWidth: 1,

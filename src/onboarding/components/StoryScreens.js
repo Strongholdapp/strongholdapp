@@ -16,7 +16,7 @@ import * as Haptics from "expo-haptics";
 import { Btn, Pill } from "../../components/ui";
 import { ShieldIcon } from "../../components/Icons";
 import { colors, fonts, radius } from "../../theme/theme";
-import { Shell, Head, Reveal, ProofCard, ProofMarquee, st as sh } from "./shared";
+import { Shell, Head, Reveal, ProofCard, ProofMarquee, Stars, st as sh } from "./shared";
 import { MiniMocks } from "./MockScreens";
 import { fill, labelFor, labelInline, GOAL_BENEFITS, edgeCopy, ninetyDayDate } from "../derive";
 
@@ -298,6 +298,7 @@ export function RecoveryProfile({ screen, profile, onNext, onBack }) {
         <Text style={s.eyebrowGold}>{String(screen.eyebrow).toUpperCase()}</Text>
       </View>
 
+
       {(screen.rows || []).map((r, i) => {
         const field = r.valueFrom === "primary_danger_moment" ? "danger_moments" : r.valueFrom;
         const val = labelFor(field, profile[r.valueFrom]);
@@ -341,6 +342,16 @@ export function RecoveryProfile({ screen, profile, onNext, onBack }) {
           <Text style={s.profileCloserGold}>{screen.closerSub}</Text>
         </View>
       </Reveal>
+
+      {/* Versículo que dá nome ao produto, fechando a tela. */}
+      {screen.scripture ? (
+        <Reveal index={(screen.rows || []).length + 2} delay={220}>
+          <View style={s.scriptureBox}>
+            <Text style={s.scriptureText}>“{screen.scripture.text}”</Text>
+            <Text style={s.scriptureRef}>{screen.scripture.ref}</Text>
+          </View>
+        </Reveal>
+      ) : null}
     </Shell>
   );
 }
@@ -567,6 +578,9 @@ export function ProofBridge({ screen, profile, onNext, onBack }) {
           </View>
         </Reveal>
       ) : null}
+      {/* Sem fileira solta de estrelas aqui: cada card do carrossel já leva a
+          avaliação embaixo do nome de quem avaliou. Uma segunda fileira sem
+          dono pareceria nota da loja, que ainda não existe. */}
 
       {(screen.marqueeGroup ? [] : screen.reviews || []).map((r, i) => (
         <Reveal key={r.id} index={i}>
@@ -692,6 +706,27 @@ const s = StyleSheet.create({
     borderRadius: radius.lg,
     padding: 14,
     marginBottom: 4,
+  },
+
+  /* ---- versículo do topo do resultado (tela 19) ---- */
+  scriptureBox: {
+    marginTop: 14,
+    borderLeftWidth: 2,
+    borderLeftColor: colors.goldBorder,
+    paddingLeft: 14,
+    paddingVertical: 2,
+  },
+  scriptureText: {
+    fontFamily: fonts.serifItalic,
+    fontSize: 15.5,
+    lineHeight: 24,
+    color: colors.ink,
+  },
+  scriptureRef: {
+    fontFamily: fonts.semibold,
+    fontSize: 12.5,
+    color: colors.gold,
+    marginTop: 6,
   },
 
   /* ---- diagrama da síntese (tela 19): o loop daqui pra frente ---- */
