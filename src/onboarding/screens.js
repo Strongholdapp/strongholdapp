@@ -495,6 +495,10 @@ export const SCREENS = [
     // Carrossel com o grupo do funil (cardsPaywall: Caleb, Nathan, Joshua).
     // A ordem é a das objeções: mecanismo, casamento, Deus.
     marqueeGroup: "paywall",
+    // "montagem bonita com 3 mockups: blocker + prayer + progress" (Lucas).
+    // Renderizados, não imagem: mostram o nome e o streak reais da pessoa.
+    mockMontage: true,
+    mockLabels: { block: "Blocked", pray: "Your prayer", progress: "Your streak" },
     reviews: [
       { id: "joshua", tag: "Faith" },
       { id: "caleb", tag: "The moment" },

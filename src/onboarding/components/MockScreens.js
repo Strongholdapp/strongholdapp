@@ -227,6 +227,50 @@ function Ticker() {
   );
 }
 
+
+/* ============================================================
+   MiniMocks , a montagem dos três mockups da tela de proof final.
+
+   Mesma regra das telas grandes: nada de imagem. São as três telas do
+   produto em miniatura, com o nome real e o streak real da pessoa, então
+   a montagem não tem como divergir do app.
+   ============================================================ */
+export function MiniMocks({ profile, labels }) {
+  const name = (profile && profile.name) || "";
+  const L = labels || {};
+  return (
+    <View style={s.miniRow}>
+      <View style={s.mini}>
+        <View style={s.miniNotch} />
+        <View style={s.miniBlock}>
+          <Text style={s.miniIcon}>🔒</Text>
+        </View>
+        <Text style={s.miniLabel}>{L.block || "Blocked"}</Text>
+      </View>
+
+      <View style={s.mini}>
+        <View style={s.miniNotch} />
+        <View style={s.miniBody}>
+          <Text style={s.miniIcon}>🙏</Text>
+          <Text style={s.miniPrayer} numberOfLines={3}>
+            {name ? `${name}, stay here for a moment.` : "Stay here for a moment."}
+          </Text>
+        </View>
+        <Text style={s.miniLabel}>{L.pray || "Your prayer"}</Text>
+      </View>
+
+      <View style={s.mini}>
+        <View style={s.miniNotch} />
+        <View style={s.miniBody}>
+          <Text style={s.miniDay}>1</Text>
+          <Text style={s.miniDayLabel}>DAY</Text>
+        </View>
+        <Text style={s.miniLabel}>{L.progress || "Your streak"}</Text>
+      </View>
+    </View>
+  );
+}
+
 /* ------------------------------------------------------------
    Utilidades de texto
    ------------------------------------------------------------ */
@@ -248,6 +292,61 @@ function cap(t) {
 }
 
 const s = StyleSheet.create({
+  miniRow: { flexDirection: "row", gap: 8, marginTop: 18 },
+  mini: { flex: 1, alignItems: "center" },
+  miniNotch: {
+    width: 22,
+    height: 3,
+    borderRadius: 2,
+    backgroundColor: "rgba(255,255,255,0.16)",
+    marginBottom: 8,
+  },
+  miniBlock: {
+    width: "100%",
+    height: 92,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "rgba(214,86,76,0.42)",
+    backgroundColor: "rgba(214,86,76,0.10)",
+  },
+  miniBody: {
+    width: "100%",
+    height: 92,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 8,
+    borderWidth: 1,
+    borderColor: colors.line,
+    backgroundColor: colors.card2,
+  },
+  miniIcon: { fontSize: 20 },
+  miniPrayer: {
+    fontFamily: fonts.serifItalic,
+    fontSize: 10.5,
+    lineHeight: 15,
+    color: colors.ink,
+    textAlign: "center",
+    marginTop: 6,
+  },
+  miniDay: { fontFamily: fonts.extrabold, fontSize: 30, color: colors.gold },
+  miniDayLabel: {
+    fontFamily: fonts.bold,
+    fontSize: 9,
+    letterSpacing: 1.4,
+    color: colors.muted2,
+    marginTop: 2,
+  },
+  miniLabel: {
+    fontFamily: fonts.semibold,
+    fontSize: 11,
+    color: colors.muted,
+    marginTop: 8,
+    textAlign: "center",
+  },
+
   phone: {
     marginTop: 20,
     borderRadius: 22,
@@ -395,4 +494,4 @@ const s = StyleSheet.create({
   },
 });
 
-export default { InterruptStep, PrayerStep, ResetStep };
+export default { InterruptStep, PrayerStep, ResetStep, MiniMocks };

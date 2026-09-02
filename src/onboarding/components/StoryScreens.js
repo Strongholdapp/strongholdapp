@@ -17,6 +17,7 @@ import { Btn, Pill } from "../../components/ui";
 import { ShieldIcon } from "../../components/Icons";
 import { colors, fonts, radius } from "../../theme/theme";
 import { Shell, Head, Reveal, ProofCard, ProofMarquee, st as sh } from "./shared";
+import { MiniMocks } from "./MockScreens";
 import { fill, labelFor, labelInline, GOAL_BENEFITS, edgeCopy, ninetyDayDate } from "../derive";
 
 /* ============================================================
@@ -340,13 +341,18 @@ export function Plan90({ screen, profile, onNext, onBack }) {
         </View>
       </Reveal>
 
+      {/* Timeline: linha vertical ligando as fases, e cada card entrando um
+          a um (delay maior que o padrão, pra dar a sensação de montagem). */}
       {(screen.phases || []).map((ph, i) => (
-        <Reveal key={ph.days} index={i + 1}>
+        <Reveal key={ph.days} index={i + 1} delay={220}>
           <View style={s.phaseRow}>
-            <View style={s.phaseNum}>
-              <Text style={s.phaseNumTxt}>{i + 1}</Text>
+            <View style={{ alignItems: "center" }}>
+              <View style={[s.phaseNum, i > 0 && s.phaseNumQuiet]}>
+                <Text style={[s.phaseNumTxt, i > 0 && s.phaseNumTxtQuiet]}>{i + 1}</Text>
+              </View>
+              {i < (screen.phases || []).length - 1 ? <View style={s.phaseLine} /> : null}
             </View>
-            <View style={{ flex: 1 }}>
+            <View style={[{ flex: 1 }, s.phaseCard]}>
               <Text style={s.phaseDays}>{ph.days}</Text>
               <Text style={s.phaseTitle}>{ph.title}</Text>
               <Text style={s.phaseBody}>{ph.body}</Text>
@@ -548,6 +554,12 @@ export function ProofBridge({ screen, profile, onNext, onBack }) {
         </Reveal>
       ))}
 
+      {screen.mockMontage ? (
+        <Reveal index={2}>
+          <MiniMocks profile={profile} labels={screen.mockLabels} />
+        </Reveal>
+      ) : null}
+
       <Reveal index={3}>
         <Text style={s.mechTitle}>{screen.mechanismTitle}</Text>
       </Reveal>
@@ -650,6 +662,18 @@ export function PaywallBridge({ screen, profile, onStart, onBack, busy, note }) 
 }
 
 const s = StyleSheet.create({
+  phaseLine: { width: 2, flex: 1, backgroundColor: colors.lineSoft, marginTop: 4 },
+  phaseNumQuiet: { backgroundColor: colors.goldSoft, borderWidth: 1, borderColor: colors.goldBorder },
+  phaseNumTxtQuiet: { color: colors.gold },
+  phaseCard: {
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.line,
+    borderRadius: radius.lg,
+    padding: 14,
+    marginBottom: 4,
+  },
+
   /* ---- mini-diagrama do loop (tela do reframe) ---- */
   loopBox: {
     marginTop: 22,
