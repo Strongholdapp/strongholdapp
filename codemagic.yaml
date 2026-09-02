@@ -15,7 +15,7 @@ workflows:
   #                                          em App Store Connect > App Information)
   #  3. Rode o workflow "ios-testflight" primeiro. Só depois o de produção.
   # ============================================================
-
+ 
   ios-testflight:
     name: Stronghold iOS , TestFlight
     max_build_duration: 90
@@ -45,24 +45,40 @@ workflows:
     scripts:
       - name: Instalar dependências
         script: npm ci
-
+ 
       - name: Expo prebuild (gera a pasta ios/ nativa)
         script: npx expo prebuild --platform ios --clean --no-install
-
+ 
       - name: CocoaPods
         script: |
           cd ios
           pod install
-
+ 
+      # O SuperwallKit 4.5.0 (o mais novo que existe, de jun/2025) não compila
+      # com o Swift do Xcode 26: ele tem duas versões de getPresentationResult,
+      # uma pro Swift e outra pro Objective-C, e o compilador novo não escolhe
+      # mais sozinho. Anotar o tipo do retorno resolve a ambiguidade.
+      # Some quando o Superwall lançar uma versão nova; até lá, isto fica.
+      - name: Corrigir ambiguidade do SuperwallKit (Xcode 26)
+        script: |
+          F="ios/Pods/SuperwallKit/Sources/SuperwallKit/Paywall/Presentation/Get Presentation Result/PublicGetPresentationResult.swift"
+          if [ -f "$F" ]; then
+            sed -i '' 's/let result = await getPresentationResult(/let result: PresentationResult = await getPresentationResult(/g' "$F"
+            echo "Linhas corrigidas:"
+            grep -n "let result: PresentationResult = await" "$F"
+          else
+            echo "Arquivo não encontrado. SuperwallKit deve ter sido atualizado, pode remover este passo."
+          fi
+ 
       - name: Assinatura (perfis da API Key)
         script: xcode-project use-profiles
-
+ 
       - name: Build number = último do TestFlight + 1
         script: |
           cd ios
           LATEST=$(app-store-connect get-latest-testflight-build-number "$APP_STORE_APPLE_ID" || echo 0)
           agvtool new-version -all $(($LATEST + 1))
-
+ 
       - name: Build do .ipa
         script: |
           xcode-project build-ipa \
@@ -83,7 +99,7 @@ workflows:
         submit_to_testflight: true
         # beta_groups:
         #   - Stronghold Internal
-
+ 
   # Mesma coisa, mas manda pra revisão da App Store. Rode só depois do
   # TestFlight passar. Publicação manual: você aperta "Release" na loja.
   ios-appstore:
@@ -113,6 +129,17 @@ workflows:
         script: |
           cd ios
           pod install
+      # Mesmo remendo do workflow de TestFlight, ver explicação lá em cima.
+      - name: Corrigir ambiguidade do SuperwallKit (Xcode 26)
+        script: |
+          F="ios/Pods/SuperwallKit/Sources/SuperwallKit/Paywall/Presentation/Get Presentation Result/PublicGetPresentationResult.swift"
+          if [ -f "$F" ]; then
+            sed -i '' 's/let result = await getPresentationResult(/let result: PresentationResult = await getPresentationResult(/g' "$F"
+            echo "Linhas corrigidas:"
+            grep -n "let result: PresentationResult = await" "$F"
+          else
+            echo "Arquivo não encontrado. SuperwallKit deve ter sido atualizado, pode remover este passo."
+          fi
       - name: Assinatura
         script: xcode-project use-profiles
       - name: Build number
