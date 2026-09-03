@@ -41,10 +41,10 @@ export function Reveal({ children, index = 0, delay = 110, style, from = 10 }) {
 }
 
 /* ---------- Depoimento real ---------- */
-/* ---------- Estrelas decorativas ----------
-   Vem do funil web (reviewCardHTML e as stars-row do quiz.js): cinco
-   estrelas ao lado do depoimento. Sem número escrito , "5/5" seria uma nota
-   atribuída a quem nunca deu nota, o que a auditoria pré-submissão pegou.
+/* ---------- Avaliação: 5 estrelas + "5/5" ----------
+   Vem do funil web (reviewCardHTML e as stars-row do quiz.js). Aqui entra
+   como AVALIAÇÃO, com a nota escrita ao lado: nos cards de depoimento fica
+   embaixo, depois do nome, que é a leitura natural de "fulano avaliou".
 
    Não confundir com a nota da App Store: essa é `screen.rating`, que segue
    `APP_RATING = null` em proof.js até existir avaliação real na loja. Não
@@ -55,6 +55,7 @@ export function Stars({ size = 13, center, style }) {
       <Text accessible={false} importantForAccessibility="no" style={[st.stars, { fontSize: size }]}>
         ★★★★★
       </Text>
+      <Text style={[st.starsScore, { fontSize: Math.max(10.5, size - 2) }]}>5/5</Text>
     </View>
   );
 }
@@ -265,6 +266,7 @@ export const st = StyleSheet.create({
     marginTop: 12,
   },
   stars: { color: colors.gold, letterSpacing: 2 },
+  starsScore: { fontFamily: fonts.semibold, color: colors.muted },
   proof: {
     backgroundColor: colors.card,
     borderWidth: 1,
