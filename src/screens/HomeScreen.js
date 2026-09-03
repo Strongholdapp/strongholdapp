@@ -13,7 +13,6 @@ import {
   ScrollView,
   Pressable,
   Animated,
-  Modal,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
@@ -36,7 +35,6 @@ export default function HomeScreen() {
 
   const [shown, setShown] = useState(0);
   const [clock, setClock] = useState("00h 00m 00s");
-  const [filterModal, setFilterModal] = useState(false);
   const meter = useRef(new Animated.Value(0)).current;
 
   // Streak conta pra cima na entrada (o beat que mais vende no clipe).
@@ -146,23 +144,21 @@ export default function HomeScreen() {
           subtitle="Stronghold steps in. Tap before you open anything else."
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy).catch(() => {});
-            go("intervention", { ivStart: 0 });
+            go("intervention", { ivStart: 0, ivSource: "panic" });
           }}
         />
 
         <Pledge day={day} pledgedDay={state.pledgedDay} onPledge={pledge} />
 
-        <Pressable style={st.filterRow} onPress={() => setFilterModal(true)}>
+        <Pressable style={st.filterRow} onPress={() => go("protection")}>
           <View style={st.filterIco}>
             <ShieldIcon size={20} color={colors.gold} />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={st.filterT}>Content filter</Text>
-            <Text style={st.filterS}>Blocking adult sites on this device</Text>
+            <Text style={st.filterT}>Maximum Protection</Text>
+            <Text style={st.filterS}>Set up the network-wide filter on your iPhone</Text>
           </View>
-          <View style={st.switchOn}>
-            <View style={st.knob} />
-          </View>
+          <Text style={st.filterArrow}>›</Text>
         </Pressable>
 
         <Sub style={{ marginTop: 18, fontSize: 14 }}>
@@ -185,12 +181,6 @@ export default function HomeScreen() {
       </Pressable>
 
       <TabBar active="home" onNavigate={go} />
-
-      <FilterModal
-        visible={filterModal}
-        name={p.name}
-        onClose={() => setFilterModal(false)}
-      />
     </Dusk>
   );
 }
@@ -247,27 +237,6 @@ function Pledge({ day, pledgedDay, onPledge }) {
         <Text style={st.pledgeLabel}>{done ? "Pledged for tonight ✓" : "Hold to pledge"}</Text>
       </Pressable>
     </View>
-  );
-}
-
-/* ---------- "Bulletproof": tentar desligar o filtro dispara a recusa ---------- */
-function FilterModal({ visible, name, onClose }) {
-  return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <View style={st.overlay}>
-        <View style={st.fxCard}>
-          <View style={st.fxIcon}>
-            <ShieldIcon size={26} color={colors.gold} />
-          </View>
-          <Text style={st.fxTitle}>Stay strong, {name}.</Text>
-          <Text style={st.fxBody}>
-            You asked us to keep this locked, so we will. The filter can't be switched off in a
-            weak moment. That's the whole point.
-          </Text>
-          <Btn title="You're right. Keep it on." onPress={onClose} />
-        </View>
-      </View>
-    </Modal>
   );
 }
 
@@ -355,11 +324,7 @@ const st = StyleSheet.create({
   },
   filterT: { fontFamily: fonts.semibold, fontSize: 15, color: colors.ink },
   filterS: { fontFamily: fonts.body, fontSize: 13, color: colors.muted },
-  switchOn: {
-    width: 46, height: 28, borderRadius: 14, backgroundColor: colors.gold,
-    justifyContent: "center", alignItems: "flex-end", paddingRight: 3,
-  },
-  knob: { width: 22, height: 22, borderRadius: 11, backgroundColor: "#fff" },
+  filterArrow: { fontFamily: fonts.semibold, fontSize: 22, color: colors.muted2 },
 
   sos: {
     position: "absolute",
@@ -377,32 +342,4 @@ const st = StyleSheet.create({
     elevation: 10,
   },
   sosTxt: { fontFamily: fonts.extrabold, fontSize: 17, color: "#fff", letterSpacing: 1.5 },
-
-  overlay: {
-    flex: 1,
-    backgroundColor: "rgba(8,6,5,0.72)",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 24,
-  },
-  fxCard: {
-    width: "100%",
-    maxWidth: 360,
-    backgroundColor: colors.sheet,
-    borderRadius: radius.sheet,
-    borderWidth: 1,
-    borderColor: colors.line,
-    padding: 24,
-    alignItems: "center",
-  },
-  fxIcon: {
-    width: 56, height: 56, borderRadius: 16,
-    backgroundColor: "rgba(224,180,103,0.16)",
-    alignItems: "center", justifyContent: "center", marginBottom: 16,
-  },
-  fxTitle: { fontFamily: fonts.serif, fontSize: 24, color: colors.ink, textAlign: "center" },
-  fxBody: {
-    fontFamily: fonts.body, fontSize: 15, lineHeight: 23,
-    color: colors.muted, textAlign: "center", marginTop: 10,
-  },
 });

@@ -123,9 +123,7 @@ export default function ProfileScreen({ withTabs = false }) {
 
         <Banner title={`Protection Window Active · ${PROTECT_TIME[a.highRiskTime] || "tonight"}`} />
 
-        {!withTabs ? (
-          <Btn title="See my 90-day plan" onPress={() => go("plan")} />
-        ) : null}
+        <Btn title="See my 90-day plan" onPress={() => go("plan")} />
       </ScrollView>
       {withTabs ? <TabBar active="profile" onNavigate={go} /> : null}
     </Dusk>

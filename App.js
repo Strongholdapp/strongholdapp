@@ -35,7 +35,6 @@ import { vars } from "./src/onboarding/derive";
 
 import ProfileScreen from "./src/screens/ProfileScreen";
 import PlanScreen from "./src/screens/PlanScreen";
-import PaywallScreen from "./src/screens/PaywallScreen";
 import HomeScreen from "./src/screens/HomeScreen";
 import InterventionScreen from "./src/screens/InterventionScreen";
 import SOSScreen from "./src/screens/SOSScreen";
@@ -126,8 +125,6 @@ function Router() {
       return state.plan ? <ProfileScreen withTabs /> : <HomeScreen />;
     case "plan":
       return needsPlan(PlanScreen);
-    case "paywall":
-      return needsPlan(PaywallScreen);
     case "home":
       return needsPlan(HomeScreen);
     case "intervention":

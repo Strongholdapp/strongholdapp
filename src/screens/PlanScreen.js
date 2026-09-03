@@ -11,7 +11,6 @@ import { Dusk, TopBar, Display, Sub, Eyebrow, Card, CardTitle, Btn } from "../co
 import { colors, fonts, spacing } from "../theme/theme";
 import { COPY } from "../data/copy";
 import { useApp } from "../state/AppContext";
-import { PAYWALL_ENABLED } from "../lib/env";
 
 export default function PlanScreen() {
   const { state, go, restart } = useApp();
@@ -79,10 +78,7 @@ export default function PlanScreen() {
           most likely to fall.
         </Sub>
 
-        <Btn
-          title="Enter Stronghold"
-          onPress={() => go(PAYWALL_ENABLED && !state.subscribed ? "paywall" : "home")}
-        />
+        <Btn title="Enter Stronghold" onPress={() => go("home")} />
         <Btn title="Start over" variant="ghost" onPress={restart} />
       </ScrollView>
     </Dusk>

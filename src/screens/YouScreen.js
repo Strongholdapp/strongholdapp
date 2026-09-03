@@ -41,7 +41,7 @@ export default function YouScreen() {
           <Eyebrow>Your profile</Eyebrow>
         </View>
         <Display gold={p.name + "."}>Hello, </Display>
-        <Sub>Everything here lives on this device only. Nothing is shared, with anyone.</Sub>
+        <Sub>Everything here lives on this device. Your name never leaves it, and nothing here is shared with other users.</Sub>
 
         <Card>
           <CardTitle>Your pattern</CardTitle>
@@ -61,23 +61,26 @@ export default function YouScreen() {
           <Btn title="Return without shame" variant="dark" onPress={() => go("return")} />
         </Card>
 
-        <Card>
-          <CardTitle>Demo mode (for recording)</CardTitle>
-          <Sub style={{ marginTop: 0 }}>
-            Forces the streak number, so the Home screen can be filmed at any day. Off by default.
-          </Sub>
-          <View style={st.demoRow}>
-            {[0, 30, 90].map((n) => (
-              <Pressable
-                key={n}
-                style={[st.demoBtn, state.demoDay === n && st.demoOn, n === 0 && !state.demoDay && st.demoOn]}
-                onPress={() => setDemoDay(n)}
-              >
-                <Text style={st.demoTxt}>{n === 0 ? "Off" : `Day ${n}`}</Text>
-              </Pressable>
-            ))}
-          </View>
-        </Card>
+        {__DEV__ ? (
+          <Card>
+            <CardTitle>Demo mode (for recording)</CardTitle>
+            <Sub style={{ marginTop: 0 }}>
+              Forces the streak number, so the Home screen can be filmed at any day. Off by default.
+              Dev builds only , never ships to the App Store.
+            </Sub>
+            <View style={st.demoRow}>
+              {[0, 30, 90].map((n) => (
+                <Pressable
+                  key={n}
+                  style={[st.demoBtn, state.demoDay === n && st.demoOn, n === 0 && !state.demoDay && st.demoOn]}
+                  onPress={() => setDemoDay(n)}
+                >
+                  <Text style={st.demoTxt}>{n === 0 ? "Off" : `Day ${n}`}</Text>
+                </Pressable>
+              ))}
+            </View>
+          </Card>
+        ) : null}
 
         <Btn
           title="Start over"

@@ -44,7 +44,7 @@ export default function BrowserScreen() {
   const trip = () => {
     setTripped(true);
     logEvent("filter_tripped", "browser");
-    timer.current = setTimeout(() => go("intervention", { ivStart: 0 }), 1900);
+    timer.current = setTimeout(() => go("intervention", { ivStart: 0, ivSource: "filter" }), 1900);
   };
 
   if (tripped) return <Parody insets={insets} />;

@@ -92,6 +92,15 @@ export function TopBar({ right, style }) {
   );
 }
 
+/* ---------- Saída de emergência: telas de crise não podem prender ninguém ---------- */
+export function CloseBtn({ onPress }) {
+  return (
+    <Pressable onPress={onPress} hitSlop={12} style={s.closeBtn}>
+      <Text style={s.closeTxt}>×</Text>
+    </Pressable>
+  );
+}
+
 export function WhoMini({ name, caption }) {
   const letter = String(name || "S").charAt(0).toUpperCase();
   return (
@@ -277,6 +286,13 @@ export const s = StyleSheet.create({
   },
   topbar: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
 
+  closeBtn: {
+    width: 34, height: 34, borderRadius: 17,
+    backgroundColor: "rgba(255,255,255,0.08)",
+    alignItems: "center", justifyContent: "center",
+  },
+  closeTxt: { fontSize: 20, lineHeight: 22, color: colors.muted, fontFamily: fonts.semibold },
+
   whoName: { fontFamily: fonts.bold, fontSize: 14, color: colors.ink },
   whoSub: { fontFamily: fonts.body, fontSize: 12, color: colors.gold },
   avatar: {
@@ -371,5 +387,5 @@ export const s = StyleSheet.create({
 
 export default {
   Dusk, Screen, Display, Sub, Eyebrow, Serif, Brand, TopBar, WhoMini,
-  Btn, Card, CardTitle, Pill, Banner, Check, TabBar, Progress,
+  Btn, Card, CardTitle, Pill, Banner, Check, TabBar, Progress, CloseBtn,
 };

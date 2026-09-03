@@ -13,7 +13,7 @@ import { View, Text, StyleSheet, ScrollView, Pressable } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Speech from "expo-speech";
 import * as Haptics from "expo-haptics";
-import { Dusk, TopBar, Display, Eyebrow, Pill, Btn, Banner } from "../components/ui";
+import { Dusk, TopBar, Display, Eyebrow, Pill, Btn, Banner, CloseBtn } from "../components/ui";
 import { colors, fonts, radius, spacing } from "../theme/theme";
 import { useApp } from "../state/AppContext";
 import { logEvent } from "../lib/supabase";
@@ -42,43 +42,62 @@ export default function InterventionScreen() {
     steps: p.protocol ? p.protocol.steps : [],
   };
 
-  if (step === 0) return <StepBlock plan={p} onNext={() => setStep(1)} />;
-  if (step === 1) return <StepPray plan={p} prayer={prayer} onNext={() => setStep(2)} />;
-  if (step === 2) return <StepReset reset={reset} onNext={() => setStep(3)} />;
+  const exit = () => go("home");
+
+  if (step === 0) return <StepBlock plan={p} source={state.ivSource} onNext={() => setStep(1)} onExit={exit} />;
+  if (step === 1) return <StepPray plan={p} prayer={prayer} onNext={() => setStep(2)} onExit={exit} />;
+  if (step === 2) return <StepReset reset={reset} onNext={() => setStep(3)} onExit={exit} />;
   return <StepDone onDone={() => go("home")} />;
 }
 
-/* ---------- Passo 1: BLOQUEIO ---------- */
-function StepBlock({ plan, onNext }) {
+/* ---------- Passo 1: BLOQUEIO ----------
+   source "filter": o navegador seguro barrou um site de verdade , mostra a
+   barra falsa de navegador e "Site blocked".
+   Qualquer outra origem (botão de pânico da Home, por exemplo): nenhum site
+   foi aberto, então a tela não pode alegar bloqueio. Variante honesta. */
+function StepBlock({ plan, source, onNext, onExit }) {
   const insets = useSafeAreaInsets();
   const hr = String(plan.pattern.highRiskLabel || "late nights").toLowerCase();
   const tr = String(plan.pattern.triggerLabel || "stress").toLowerCase();
+  const isFilterBlock = source === "filter";
 
   return (
     <View style={st.blockWrap}>
-      <View style={[st.browserBar, { paddingTop: insets.top + 12 }]}>
-        <Text style={st.browserIco}>‹ ›</Text>
-        <View style={st.browserUrl}>
-          <Text style={st.browserUrlTxt}>⚠ Protected Website</Text>
+      {isFilterBlock ? (
+        <View style={[st.browserBar, { paddingTop: insets.top + 12 }]}>
+          <Text style={st.browserIco}>‹ ›</Text>
+          <View style={st.browserUrl}>
+            <Text style={st.browserUrlTxt}>⚠ Protected Website</Text>
+          </View>
+          <Text style={st.browserIco}>⤴</Text>
         </View>
-        <Text style={st.browserIco}>⤴</Text>
-      </View>
+      ) : (
+        <View style={{ paddingTop: insets.top + 12 }} />
+      )}
 
       <View style={{ flex: 1 }} />
 
       <View style={[st.sheet, { paddingBottom: insets.bottom + 22 }]}>
         <View style={st.grab} />
-        <TopBar right={<Pill tone="gold">Active</Pill>} />
+        <TopBar right={<CloseBtn onPress={onExit} />} />
         <Display gold="stepped in." style={{ fontSize: 30, marginTop: 16 }}>
           Stronghold{" "}
         </Display>
-        <Text style={st.blockedSub}>This protected site has been blocked.</Text>
+        <Text style={st.blockedSub}>
+          {isFilterBlock
+            ? "This protected site has been blocked."
+            : "You reached out before anything happened. That's the win."}
+        </Text>
         <Text style={st.blockedBody}>
           You told us {hr} and {tr} often come right before your difficult moments. Before this
           goes any further, Stronghold has prepared your next step.
         </Text>
         <View style={st.pills}>
-          <Pill tone="red">⊗ Site blocked</Pill>
+          {isFilterBlock ? (
+            <Pill tone="red">⊗ Site blocked</Pill>
+          ) : (
+            <Pill tone="gold">Moment interrupted</Pill>
+          )}
           <Pill tone="gold">Pattern recognized</Pill>
           <Pill>Personalized intervention ready</Pill>
         </View>
@@ -89,7 +108,7 @@ function StepBlock({ plan, onNext }) {
 }
 
 /* ---------- Passo 2: ORAÇÃO (revela palavra a palavra) ---------- */
-function StepPray({ plan, prayer, onNext }) {
+function StepPray({ plan, prayer, onNext, onExit }) {
   const insets = useSafeAreaInsets();
   const words = String(prayer.text).split(/\s+/);
   const [lit, setLit] = useState(0);
@@ -138,7 +157,7 @@ function StepPray({ plan, prayer, onNext }) {
           paddingHorizontal: spacing.screenX,
         }}
       >
-        <TopBar />
+        <TopBar right={<CloseBtn onPress={onExit} />} />
         <View style={{ marginTop: 20 }}>
           <Eyebrow>Tonight's prayer</Eyebrow>
         </View>
@@ -181,7 +200,6 @@ function StepPray({ plan, prayer, onNext }) {
 
         <Btn
           title={ready ? "I prayed it. Now the reset." : "Read it slowly..."}
-          disabled={!ready}
           onPress={onNext}
         />
       </View>
@@ -190,7 +208,7 @@ function StepPray({ plan, prayer, onNext }) {
 }
 
 /* ---------- Passo 3: RESET de 2 minutos ---------- */
-function StepReset({ reset, onNext }) {
+function StepReset({ reset, onNext, onExit }) {
   const insets = useSafeAreaInsets();
   const [left, setLeft] = useState(120);
 
@@ -212,7 +230,7 @@ function StepReset({ reset, onNext }) {
           paddingHorizontal: spacing.screenX,
         }}
       >
-        <TopBar />
+        <TopBar right={<CloseBtn onPress={onExit} />} />
         <View style={{ marginTop: 20 }}>
           <Eyebrow>2-minute reset</Eyebrow>
         </View>

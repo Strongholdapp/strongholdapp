@@ -8,7 +8,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
-import { TopBar, Pill, Btn } from "../components/ui";
+import { TopBar, Pill, Btn, CloseBtn } from "../components/ui";
 import { colors, fonts, spacing } from "../theme/theme";
 import { useApp } from "../state/AppContext";
 
@@ -59,7 +59,14 @@ export default function SOSScreen() {
           paddingHorizontal: spacing.screenX,
         }}
       >
-        <TopBar right={<Pill tone="red">● SOS live</Pill>} />
+        <TopBar
+          right={
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+              <Pill tone="red">● SOS live</Pill>
+              <CloseBtn onPress={() => go("home")} />
+            </View>
+          }
+        />
 
         <View style={{ flex: 1, justifyContent: "center" }}>
           <View style={st.halo} />
@@ -71,7 +78,6 @@ export default function SOSScreen() {
 
         <Btn
           title={done ? "Continue to my prayer" : "Stronghold is with you..."}
-          disabled={!done}
           onPress={() => go("intervention", { ivStart: 1 })}
         />
       </View>
