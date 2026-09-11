@@ -9,7 +9,9 @@
     "userInterfaceStyle": "dark",
     "backgroundColor": "#16232f",
     "primaryColor": "#e0b467",
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "bundleIdentifier": "app.livestronghold.stronghold",
       "buildNumber": "1",
@@ -17,7 +19,12 @@
       "requireFullScreen": true,
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
-        "UIViewControllerBasedStatusBarAppearance": false
+        "UIViewControllerBasedStatusBarAppearance": false,
+        "NSUserTrackingUsageDescription": "We use this to show you more relevant ads and measure how our ads are performing.",
+        "SKAdNetworkItems": [
+          { "SKAdNetworkIdentifier": "v9wttpbfk9.skadnetwork" },
+          { "SKAdNetworkIdentifier": "n38lu8286q.skadnetwork" }
+        ]
       }
     },
     "android": {
@@ -47,7 +54,25 @@
           }
         }
       ],
-      "expo-font"
+      "expo-font",
+      [
+        "expo-tracking-transparency",
+        {
+          "userTrackingPermission": "We use this to show you more relevant ads and measure how our ads are performing."
+        }
+      ],
+      [
+        "react-native-fbsdk-next",
+        {
+          "appID": "1596500312114145",
+          "clientToken": "f2abb3bc6d528ba5964f37aefb01400e",
+          "displayName": "Stronghold",
+          "scheme": "fb1596500312114145",
+          "advertiserIDCollectionEnabled": true,
+          "autoLogAppEventsEnabled": false,
+          "isAutoInitEnabled": true
+        }
+      ]
     ]
   }
 }

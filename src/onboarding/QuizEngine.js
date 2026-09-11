@@ -16,6 +16,7 @@ import { SCREENS, SCREEN_BY_ID, FIRST_SCREEN, indexOf } from "./screens";
 import { derivePrimaryDangerMoment, ninetyDayDate, cleanName, prayerContext } from "./derive";
 import * as A from "../lib/analytics";
 import { requestPermission } from "../lib/notifications";
+import { requestTracking } from "../lib/meta";
 import { InterruptStep, PrayerStep, ResetStep } from "./components/MockScreens";
 
 import {
@@ -150,6 +151,13 @@ export default function QuizEngine({
             profile={profile}
             onNext={() => {
               A.startQuizTap();
+              // ATT aqui, e não no App.js: no boot frio a janela do iOS ainda
+              // não está ativa e o alerta não chega a aparecer , o sistema
+              // devolve "denied" sem perguntar, queimando a única chance que o
+              // app tem. Aqui a pessoa acabou de tocar num botão, então a tela
+              // está ativa com certeza. Não damos await: o quiz avança na hora
+              // e o alerta do sistema sobe por cima.
+              requestTracking();
               goTo(screen.next);
             }}
           />

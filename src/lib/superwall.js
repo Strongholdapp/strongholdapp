@@ -14,9 +14,11 @@
    ============================================================ */
 
 import { SUPERWALL_API_KEY, SUPERWALL_PLACEMENT, hasSuperwall } from "./env";
+import * as Meta from "./meta";
 
 let sdk = null;
 let configured = false;
+let delegateAttached = false;
 
 // require preguiçoso: se o módulo nativo não estiver no build, o app não quebra.
 function getSdk() {
@@ -37,9 +39,75 @@ export async function configure() {
     const Superwall = mod.default || mod.Superwall;
     await Superwall.configure({ apiKey: SUPERWALL_API_KEY });
     configured = true;
+    await attachMetaDelegate(mod, Superwall);
     return true;
   } catch (e) {
     return false;
+  }
+}
+
+/* ============================================================
+   Ponte Superwall -> Meta App Events.
+
+   O Superwall é quem sabe que a compra aconteceu (é ele que fala com o
+   StoreKit), então é dele que os eventos de receita saem. A ponte é o
+   SuperwallDelegate: `handleSuperwallEvent` recebe TODOS os eventos do SDK, e
+   a gente filtra os três que interessam.
+
+   Os tipos e o formato do payload foram conferidos no código do pacote, não
+   chutados:
+     node_modules/@superwall/react-native-superwall/src/public/SuperwallEventInfo.ts
+       -> EventType.freeTrialStart | subscriptionStart | transactionComplete
+       -> os três carregam `product: StoreProduct`
+     node_modules/@superwall/react-native-superwall/src/public/StoreProduct.ts
+       -> `price: number` e `currencyCode?: string | null`  (preço POR LOJA)
+
+   O delegate é uma classe abstrata com 12 métodos. Os listeners nativos
+   chamam `delegate?.metodo(...)` sem checar se o método existe, então faltar
+   um vira TypeError dentro do listener. Por isso todos estão aqui, mesmo os
+   que não fazem nada.
+   ============================================================ */
+async function attachMetaDelegate(mod, Superwall) {
+  if (delegateAttached) return;
+  try {
+    const { EventType } = mod;
+    const noop = () => {};
+
+    await Superwall.shared.setDelegate({
+      handleSuperwallEvent(info) {
+        try {
+          const ev = info && info.event;
+          if (!ev) return;
+          switch (ev.type) {
+            case EventType.freeTrialStart:
+              Meta.startTrial(ev.product);
+              break;
+            case EventType.subscriptionStart:
+              Meta.subscribe(ev.product);
+              break;
+            case EventType.transactionComplete:
+              Meta.purchase(ev.product);
+              break;
+            default:
+              break;
+          }
+        } catch (e) {}
+      },
+      subscriptionStatusDidChange: noop,
+      willRedeemLink: noop,
+      didRedeemLink: noop,
+      handleCustomPaywallAction: noop,
+      willDismissPaywall: noop,
+      willPresentPaywall: noop,
+      didDismissPaywall: noop,
+      didPresentPaywall: noop,
+      paywallWillOpenURL: noop,
+      paywallWillOpenDeepLink: noop,
+      handleLog: noop,
+    });
+    delegateAttached = true;
+  } catch (e) {
+    // Sem delegate o paywall continua funcionando; só a medição é que não sai.
   }
 }
 

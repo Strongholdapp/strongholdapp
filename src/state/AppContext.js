@@ -11,6 +11,7 @@ import { loadState, saveState, clearState, emptyState } from "../lib/storage";
 import { build as buildPlan } from "../engine/planEngine";
 import { logEvent, saveLead } from "../lib/supabase";
 import { setUserAttributes } from "../lib/superwall";
+import { completeRegistration as metaCompleteRegistration } from "../lib/meta";
 import { toLegacyAnswers, cleanName } from "../onboarding/derive";
 import { FIRST_SCREEN } from "../onboarding/screens";
 import { scheduleRiskWindowReminder } from "../lib/notifications";
@@ -84,6 +85,9 @@ export function AppProvider({ children }) {
 
         saveLead(answers, { intent: "app_onboarding_v3" });
         setUserAttributes(plan);
+        // Meta: fim do onboarding = cadastro concluído. Fica junto do
+        // logEvent interno de propósito, pra os dois contarem o mesmo momento.
+        metaCompleteRegistration();
         scheduleRiskWindowReminder(profile, cleanName(profile.name));
         logEvent("onboarding_completed", "screen_27_paywall", {
           archetype: plan.archetype && plan.archetype.key,
