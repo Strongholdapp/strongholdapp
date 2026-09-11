@@ -53,7 +53,38 @@ workflows:
         script: |
           cd ios
           pod install
- 
+
+      # ============================================================
+      # Prova nº 1: o rastreamento chegou no PROJETO NATIVO gerado.
+      #
+      # Existe porque o código-fonte estar certo no GitHub não prova que o
+      # binário ficou certo: o meta.js engole erro de módulo nativo faltando
+      # em silêncio (de propósito, pra medição nunca derrubar o app), então
+      # um prebuild que não linkasse o SDK daria exatamente o que o Lucas viu
+      # , nenhum aviso de ATT e nenhum erro.
+      #
+      # Se faltar qualquer coisa aqui, o build MORRE com mensagem clara, em
+      # vez de publicar um .ipa mudo.
+      # ============================================================
+      - name: Verificar config de rastreamento no projeto nativo gerado
+        script: |
+          set -e
+          # O caminho é descoberto, não chutado: o nome da pasta vem do
+          # prebuild e mudaria junto com o nome do projeto.
+          PLIST=$(find ios -maxdepth 2 -iname Info.plist -not -path "*/Pods/*" | head -1)
+          echo "Info.plist encontrado em: $PLIST"
+          [ -n "$PLIST" ] || { echo "FALTANDO Info.plist no projeto nativo gerado"; exit 1; }
+          echo "--- NSUserTrackingUsageDescription ---"
+          /usr/libexec/PlistBuddy -c "Print :NSUserTrackingUsageDescription" "$PLIST" || { echo "FALTANDO NSUserTrackingUsageDescription"; exit 1; }
+          echo "--- SKAdNetworkItems ---"
+          /usr/libexec/PlistBuddy -c "Print :SKAdNetworkItems" "$PLIST" || { echo "FALTANDO SKAdNetworkItems"; exit 1; }
+          echo "--- FacebookAppID / FacebookClientToken ---"
+          /usr/libexec/PlistBuddy -c "Print :FacebookAppID" "$PLIST" || { echo "FALTANDO FacebookAppID"; exit 1; }
+          /usr/libexec/PlistBuddy -c "Print :FacebookClientToken" "$PLIST" || { echo "FALTANDO FacebookClientToken"; exit 1; }
+          echo "--- Pods do Facebook/ATT instalados? ---"
+          grep -E "FBSDKCoreKit|react-native-fbsdk-next|ExpoTrackingTransparency" ios/Podfile.lock || { echo "FALTANDO PODS DE RASTREAMENTO NO Podfile.lock"; exit 1; }
+          echo "OK: config de rastreamento presente no projeto nativo gerado."
+
       # O SuperwallKit 4.5.0 (o mais novo que existe, de jun/2025) não compila
       # com o Swift do Xcode 26: ele tem duas versões de getPresentationResult,
       # uma pro Swift e outra pro Objective-C, e o compilador novo não escolhe
@@ -84,6 +115,60 @@ workflows:
           xcode-project build-ipa \
             --workspace "$XCODE_WORKSPACE" \
             --scheme "$XCODE_SCHEME"
+
+      # ============================================================
+      # Prova nº 2: o rastreamento está dentro do .ipa que vai pro TestFlight.
+      #
+      # A prova nº 1 olha o projeto ANTES de compilar. Esta abre o .ipa final
+      # e procura o código de verdade dentro do binário. É a única checagem
+      # que responde "o que o Lucas instalou tem ATT?" sem depender do
+      # celular dele.
+      # ============================================================
+      - name: Verificar se o rastreamento foi compilado dentro do .ipa final
+        script: |
+          set -e
+          IPA=$(find build/ios/ipa -name "*.ipa" | head -1)
+          echo "IPA: $IPA"
+          [ -n "$IPA" ] || { echo "FALTANDO .ipa pra verificar"; exit 1; }
+          WORKDIR=$(mktemp -d)
+          unzip -q "$IPA" -d "$WORKDIR"
+          APP=$(find "$WORKDIR/Payload" -maxdepth 1 -name "*.app" | head -1)
+          echo "App: $APP"
+          echo "--- Info.plist dentro do .app final ---"
+          /usr/libexec/PlistBuddy -c "Print :NSUserTrackingUsageDescription" "$APP/Info.plist" || { echo "FALTANDO NO BINARIO FINAL: NSUserTrackingUsageDescription"; exit 1; }
+          /usr/libexec/PlistBuddy -c "Print :FacebookAppID" "$APP/Info.plist" || { echo "FALTANDO NO BINARIO FINAL: FacebookAppID"; exit 1; }
+          /usr/libexec/PlistBuddy -c "Print :SKAdNetworkItems" "$APP/Info.plist" || { echo "FALTANDO NO BINARIO FINAL: SKAdNetworkItems"; exit 1; }
+
+          # O nome do executável sai do próprio bundle. Chutar "Stronghold"
+          # daria falso negativo se o prebuild mudasse o nome do alvo.
+          BIN_NAME=$(/usr/libexec/PlistBuddy -c "Print :CFBundleExecutable" "$APP/Info.plist")
+          BIN="$APP/$BIN_NAME"
+          echo "Executável: $BIN"
+
+          # Procura no executável E nos frameworks embarcados: com CocoaPods o
+          # SDK pode entrar estático (dentro do executável) ou como .framework
+          # dinâmico em Frameworks/. Os dois casos provam que o código está no
+          # .ipa; olhar só o executável reprovaria um build bom.
+          contar() {
+            local termo="$1"
+            local n=0
+            n=$(strings "$BIN" | grep -c "$termo" || true)
+            if [ "$n" -eq 0 ] && [ -d "$APP/Frameworks" ]; then
+              n=$(find "$APP/Frameworks" -type f -perm +111 -exec strings {} + 2>/dev/null | grep -c "$termo" || true)
+              [ "$n" -gt 0 ] && echo "(encontrado em Frameworks/, não no executável , linkagem dinâmica)" >&2
+            fi
+            echo "$n"
+          }
+
+          echo "--- Codigo do SDK do Meta realmente compilado no binario? ---"
+          COUNT=$(contar "FBSDKAppEvents")
+          echo "Ocorrencias de FBSDKAppEvents: $COUNT"
+          if [ "$COUNT" -eq 0 ]; then echo "SDK DO META NAO ENCONTRADO DENTRO DO BINARIO"; exit 1; fi
+          echo "--- Codigo do ATT realmente compilado no binario? ---"
+          COUNT2=$(contar "ATTrackingManager")
+          echo "Ocorrencias de ATTrackingManager: $COUNT2"
+          if [ "$COUNT2" -eq 0 ]; then echo "MODULO DE ATT NAO ENCONTRADO DENTRO DO BINARIO"; exit 1; fi
+          echo "OK: rastreamento (Meta + ATT) confirmado dentro do .ipa que vai pro TestFlight."
     artifacts:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
@@ -129,6 +214,23 @@ workflows:
         script: |
           cd ios
           pod install
+      # Mesma prova nº 1 do workflow de TestFlight, ver explicação lá em cima.
+      - name: Verificar config de rastreamento no projeto nativo gerado
+        script: |
+          set -e
+          PLIST=$(find ios -maxdepth 2 -iname Info.plist -not -path "*/Pods/*" | head -1)
+          echo "Info.plist encontrado em: $PLIST"
+          [ -n "$PLIST" ] || { echo "FALTANDO Info.plist no projeto nativo gerado"; exit 1; }
+          echo "--- NSUserTrackingUsageDescription ---"
+          /usr/libexec/PlistBuddy -c "Print :NSUserTrackingUsageDescription" "$PLIST" || { echo "FALTANDO NSUserTrackingUsageDescription"; exit 1; }
+          echo "--- SKAdNetworkItems ---"
+          /usr/libexec/PlistBuddy -c "Print :SKAdNetworkItems" "$PLIST" || { echo "FALTANDO SKAdNetworkItems"; exit 1; }
+          echo "--- FacebookAppID / FacebookClientToken ---"
+          /usr/libexec/PlistBuddy -c "Print :FacebookAppID" "$PLIST" || { echo "FALTANDO FacebookAppID"; exit 1; }
+          /usr/libexec/PlistBuddy -c "Print :FacebookClientToken" "$PLIST" || { echo "FALTANDO FacebookClientToken"; exit 1; }
+          echo "--- Pods do Facebook/ATT instalados? ---"
+          grep -E "FBSDKCoreKit|react-native-fbsdk-next|ExpoTrackingTransparency" ios/Podfile.lock || { echo "FALTANDO PODS DE RASTREAMENTO NO Podfile.lock"; exit 1; }
+          echo "OK: config de rastreamento presente no projeto nativo gerado."
       # Mesmo remendo do workflow de TestFlight, ver explicação lá em cima.
       - name: Corrigir ambiguidade do SuperwallKit (Xcode 26)
         script: |
@@ -152,6 +254,44 @@ workflows:
           xcode-project build-ipa \
             --workspace "$XCODE_WORKSPACE" \
             --scheme "$XCODE_SCHEME"
+      # Mesma prova nº 2 do workflow de TestFlight, ver explicação lá em cima.
+      # Aqui importa ainda mais: daqui o .ipa vai pra revisão da App Store.
+      - name: Verificar se o rastreamento foi compilado dentro do .ipa final
+        script: |
+          set -e
+          IPA=$(find build/ios/ipa -name "*.ipa" | head -1)
+          echo "IPA: $IPA"
+          [ -n "$IPA" ] || { echo "FALTANDO .ipa pra verificar"; exit 1; }
+          WORKDIR=$(mktemp -d)
+          unzip -q "$IPA" -d "$WORKDIR"
+          APP=$(find "$WORKDIR/Payload" -maxdepth 1 -name "*.app" | head -1)
+          echo "App: $APP"
+          echo "--- Info.plist dentro do .app final ---"
+          /usr/libexec/PlistBuddy -c "Print :NSUserTrackingUsageDescription" "$APP/Info.plist" || { echo "FALTANDO NO BINARIO FINAL: NSUserTrackingUsageDescription"; exit 1; }
+          /usr/libexec/PlistBuddy -c "Print :FacebookAppID" "$APP/Info.plist" || { echo "FALTANDO NO BINARIO FINAL: FacebookAppID"; exit 1; }
+          /usr/libexec/PlistBuddy -c "Print :SKAdNetworkItems" "$APP/Info.plist" || { echo "FALTANDO NO BINARIO FINAL: SKAdNetworkItems"; exit 1; }
+          BIN_NAME=$(/usr/libexec/PlistBuddy -c "Print :CFBundleExecutable" "$APP/Info.plist")
+          BIN="$APP/$BIN_NAME"
+          echo "Executável: $BIN"
+          contar() {
+            local termo="$1"
+            local n=0
+            n=$(strings "$BIN" | grep -c "$termo" || true)
+            if [ "$n" -eq 0 ] && [ -d "$APP/Frameworks" ]; then
+              n=$(find "$APP/Frameworks" -type f -perm +111 -exec strings {} + 2>/dev/null | grep -c "$termo" || true)
+              [ "$n" -gt 0 ] && echo "(encontrado em Frameworks/, não no executável , linkagem dinâmica)" >&2
+            fi
+            echo "$n"
+          }
+          echo "--- Codigo do SDK do Meta realmente compilado no binario? ---"
+          COUNT=$(contar "FBSDKAppEvents")
+          echo "Ocorrencias de FBSDKAppEvents: $COUNT"
+          if [ "$COUNT" -eq 0 ]; then echo "SDK DO META NAO ENCONTRADO DENTRO DO BINARIO"; exit 1; fi
+          echo "--- Codigo do ATT realmente compilado no binario? ---"
+          COUNT2=$(contar "ATTrackingManager")
+          echo "Ocorrencias de ATTrackingManager: $COUNT2"
+          if [ "$COUNT2" -eq 0 ]; then echo "MODULO DE ATT NAO ENCONTRADO DENTRO DO BINARIO"; exit 1; fi
+          echo "OK: rastreamento (Meta + ATT) confirmado dentro do .ipa final."
     artifacts:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
