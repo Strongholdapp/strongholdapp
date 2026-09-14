@@ -25,7 +25,7 @@
 import React, { useState } from "react";
 import { View, Text, StyleSheet, ScrollView, Pressable, Linking } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Dusk, Btn, Pill, Sub, TabBar } from "../components/ui";
+import { Dusk, Btn, Pill, Sub, TabBar, useTabBarSpace } from "../components/ui";
 import { colors, fonts, radius } from "../theme/theme";
 import { useApp } from "../state/AppContext";
 import { logEvent } from "../lib/supabase";
@@ -53,6 +53,7 @@ const STEPS = [
 export default function MaxProtectionScreen() {
   const { go } = useApp();
   const insets = useSafeAreaInsets();
+  const tabBarSpace = useTabBarSpace();
   const [opened, setOpened] = useState(false);
 
   const openProfile = async () => {
@@ -73,7 +74,7 @@ export default function MaxProtectionScreen() {
         contentContainerStyle={{
           paddingTop: insets.top + 18,
           paddingHorizontal: 20,
-          paddingBottom: 120,
+          paddingBottom: tabBarSpace,
         }}
       >
         <Pill tone="gold">🛡️ Maximum Protection</Pill>

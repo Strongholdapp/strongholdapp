@@ -7,7 +7,7 @@
 import React from "react";
 import { View, Text, StyleSheet, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Dusk, TopBar, WhoMini, Display, Sub, Eyebrow, Card, CardTitle, Pill, Banner, Check, Btn, TabBar } from "../components/ui";
+import { Dusk, TopBar, WhoMini, Display, Sub, Eyebrow, Card, CardTitle, Pill, Banner, Check, Btn, TabBar, useTabBarSpace } from "../components/ui";
 import { colors, fonts, spacing } from "../theme/theme";
 import { useApp } from "../state/AppContext";
 
@@ -44,6 +44,7 @@ const PROTECT_TIME = {
 export default function ProfileScreen({ withTabs = false }) {
   const { state, go, streakDay } = useApp();
   const insets = useSafeAreaInsets();
+  const tabBarSpace = useTabBarSpace();
   const p = state.plan;
   const a = state.answers || {};
   if (!p) return null;
@@ -62,7 +63,7 @@ export default function ProfileScreen({ withTabs = false }) {
         contentContainerStyle={{
           paddingTop: insets.top + 6,
           paddingHorizontal: spacing.screenX,
-          paddingBottom: withTabs ? 110 : 24,
+          paddingBottom: withTabs ? tabBarSpace : 24,
         }}
       >
         <TopBar right={<WhoMini name={p.name} caption={`Day ${streakDay()} streak`} />} />

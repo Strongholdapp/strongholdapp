@@ -16,7 +16,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as Haptics from "expo-haptics";
-import { Dusk, TopBar, WhoMini, Sub, Card, Btn, TabBar, Pill } from "../components/ui";
+import { Dusk, TopBar, WhoMini, Sub, Card, Btn, TabBar, Pill, useTabBarSpace } from "../components/ui";
 import { ShieldIcon } from "../components/Icons";
 import { colors, fonts, radius, spacing } from "../theme/theme";
 import { COPY } from "../data/copy";
@@ -26,9 +26,20 @@ function pad(n) {
   return n < 10 ? "0" + n : String(n);
 }
 
+/* Geometria do botão SOS, que flutua sobre a tela. Ficam aqui em cima porque
+   o paddingBottom do ScrollView depende deles: o SOS sobe MAIS ALTO que a
+   TabBar, então é o topo dele , e não o da barra , que define onde o
+   conteúdo precisa parar. */
+const SOS_BOTTOM = 82; // da safe area até a base do botão
+const SOS_SIZE = 60; // igual ao width/height de st.sos
+
 export default function HomeScreen() {
   const { state, go, streakDay, pledge } = useApp();
   const insets = useSafeAreaInsets();
+  /* Foi exatamente isto que escondeu o card "Maximum Protection" atrás da
+     barra: o padding daqui era 118 chumbado, sem insets e sem contar o SOS. */
+  const tabBarSpace = useTabBarSpace();
+  const bottomSpace = Math.max(tabBarSpace, insets.bottom + SOS_BOTTOM + SOS_SIZE + 18);
   const p = state.plan;
   const day = streakDay();
   const pct = Math.min(100, Math.round((day / 90) * 100));
@@ -92,7 +103,7 @@ export default function HomeScreen() {
         contentContainerStyle={{
           paddingTop: insets.top + 6,
           paddingHorizontal: spacing.screenX,
-          paddingBottom: 118,
+          paddingBottom: bottomSpace,
         }}
       >
         <TopBar right={<WhoMini name={p.name} caption={`Day ${day}`} />} />
@@ -171,7 +182,7 @@ export default function HomeScreen() {
       </ScrollView>
 
       <Pressable
-        style={[st.sos, { bottom: insets.bottom + 82 }]}
+        style={[st.sos, { bottom: insets.bottom + SOS_BOTTOM }]}
         onPress={() => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
           go("sos");

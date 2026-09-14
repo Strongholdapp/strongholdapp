@@ -16,7 +16,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { View, Text, StyleSheet, ScrollView, Pressable, TextInput } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Dusk, Sub, Pill, TabBar } from "../components/ui";
+import { Dusk, Sub, Pill, TabBar, useTabBarSpace } from "../components/ui";
 import { colors, fonts, radius } from "../theme/theme";
 import { useApp } from "../state/AppContext";
 import { logEvent } from "../lib/supabase";
@@ -35,6 +35,7 @@ const MARKS = [
 export default function BrowserScreen() {
   const { go } = useApp();
   const insets = useSafeAreaInsets();
+  const tabBarSpace = useTabBarSpace();
   const [tripped, setTripped] = useState(false);
   const [url, setUrl] = useState("");
   const timer = useRef(null);
@@ -73,7 +74,7 @@ export default function BrowserScreen() {
         <Text style={st.ico}>⤴</Text>
       </View>
 
-      <ScrollView contentContainerStyle={{ padding: 18, paddingBottom: 110 }}>
+      <ScrollView contentContainerStyle={{ padding: 18, paddingBottom: tabBarSpace }}>
         <Pill tone="green">🛡️ Content filter active</Pill>
         <Text style={st.bmTitle}>FREQUENTLY VISITED</Text>
         <View style={st.grid}>

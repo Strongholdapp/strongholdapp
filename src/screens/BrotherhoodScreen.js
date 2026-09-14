@@ -13,7 +13,7 @@
 import React from "react";
 import { View, Text, Image, StyleSheet, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Dusk, TopBar, Display, Sub, Eyebrow, Pill, TabBar } from "../components/ui";
+import { Dusk, TopBar, Display, Sub, Eyebrow, Pill, TabBar, useTabBarSpace } from "../components/ui";
 import { colors, fonts, radius, spacing } from "../theme/theme";
 import { REVIEWS, REVIEW_PHOTOS, PROOF_GROUPS } from "../onboarding/proof";
 import { useApp } from "../state/AppContext";
@@ -21,6 +21,7 @@ import { useApp } from "../state/AppContext";
 export default function BrotherhoodScreen() {
   const { state, go } = useApp();
   const insets = useSafeAreaInsets();
+  const tabBarSpace = useTabBarSpace();
   const p = state.plan || { name: "Brother" };
   const posts = (PROOF_GROUPS.brotherhood || [])
     .map((id) => REVIEWS[id])
@@ -33,7 +34,7 @@ export default function BrotherhoodScreen() {
         contentContainerStyle={{
           paddingTop: insets.top + 6,
           paddingHorizontal: spacing.screenX,
-          paddingBottom: 110,
+          paddingBottom: tabBarSpace,
         }}
       >
         <TopBar right={<Pill>🔒 Private</Pill>} />

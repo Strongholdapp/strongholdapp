@@ -7,13 +7,14 @@
 import React from "react";
 import { View, Text, StyleSheet, ScrollView, Pressable, Alert } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Dusk, TopBar, Display, Sub, Eyebrow, Card, CardTitle, Btn, TabBar, Pill } from "../components/ui";
+import { Dusk, TopBar, Display, Sub, Eyebrow, Card, CardTitle, Btn, TabBar, Pill, useTabBarSpace } from "../components/ui";
 import { colors, fonts, radius, spacing } from "../theme/theme";
 import { useApp } from "../state/AppContext";
 
 export default function YouScreen() {
   const { state, go, restart, streakDay, setDemoDay } = useApp();
   const insets = useSafeAreaInsets();
+  const tabBarSpace = useTabBarSpace();
   const p = state.plan;
   if (!p) return null;
 
@@ -32,7 +33,7 @@ export default function YouScreen() {
         contentContainerStyle={{
           paddingTop: insets.top + 6,
           paddingHorizontal: spacing.screenX,
-          paddingBottom: 110,
+          paddingBottom: tabBarSpace,
         }}
       >
         <TopBar right={<Pill tone="gold">{`Day ${streakDay()}`}</Pill>} />

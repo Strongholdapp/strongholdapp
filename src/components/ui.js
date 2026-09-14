@@ -248,6 +248,43 @@ const TABS = [
   { key: "you", label: "Profile", Icon: UserIcon },
 ];
 
+/* ============================================================
+   Altura da TabBar, somada do estilo dela (s.tabbar / s.tab / s.tabTxt):
+
+     borda de cima .............  1
+     paddingTop ................  9
+     ícone (size 23) ........... 23
+     marginBottom do ícone .....  3
+     texto (fontSize 10.5) ..... ~14
+     paddingBottom ............   9
+     ─────────────────────────────
+     total ..................... 59  + insets.bottom
+
+   A safe area fica de fora porque varia por aparelho: 0 em iPhone com
+   botão físico, ~34 em iPhone com home indicator.
+   ============================================================ */
+export const TAB_BAR_HEIGHT = 59;
+
+/** Folga entre o fim do conteúdo e o topo da barra. */
+const RESPIRO = 16;
+
+/**
+ * Quanto reservar no fim de um ScrollView pra o conteúdo não terminar
+ * escondido atrás da TabBar.
+ *
+ * Existe porque cada tela tinha seu próprio número chumbado (118, 110,
+ * 120...), nenhum deles derivado de insets: funcionavam por sorte no
+ * aparelho em que foram ajustados e escondiam conteúdo nos outros. Qualquer
+ * coisa nova adicionada no fim de uma tela caía atrás da barra.
+ *
+ * @param extra pra tela que tem algo flutuando MAIS ALTO que a TabBar,
+ *              como o botão SOS da Home.
+ */
+export function useTabBarSpace(extra = 0) {
+  const insets = useSafeAreaInsets();
+  return insets.bottom + TAB_BAR_HEIGHT + RESPIRO + extra;
+}
+
 export function TabBar({ active, onNavigate }) {
   const insets = useSafeAreaInsets();
   return (
