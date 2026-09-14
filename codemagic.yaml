@@ -206,6 +206,28 @@ workflows:
         distribution_type: app_store
         bundle_identifier: app.livestronghold.stronghold
     scripts:
+      # ============================================================
+      # Trava: nenhum build de LOJA sai sem a chave do Superwall.
+      #
+      # Sem a chave, App.js cai no branch `!hasSuperwall()` e libera o app
+      # inteiro sem pedir pagamento , de propósito, pra gravar clipe e pra
+      # revisão da Apple. O problema é que isso é silencioso: vira só uma
+      # nota discreta na tela de onboarding, fácil de passar batido, e o
+      # .ipa vai pra loja sem paywall sem ninguém perceber.
+      #
+      # Fica como PRIMEIRO passo (e não junto do build-ipa) porque aqui ele
+      # falha em segundos; lá embaixo custaria uns 20 min de prebuild e
+      # CocoaPods antes de descobrir a mesma coisa.
+      #
+      # Só no workflow de App Store. O de TestFlight continua podendo rodar
+      # sem a chave, que é o que permite testar o app sem paywall.
+      # ============================================================
+      - name: Garantir que a chave do Superwall está presente
+        script: |
+          if [ -z "$EXPO_PUBLIC_SUPERWALL_API_KEY" ]; then
+            echo "EXPO_PUBLIC_SUPERWALL_API_KEY vazia , build de App Store nao pode sair sem paywall funcionando."
+            exit 1
+          fi
       - name: Instalar dependências
         script: npm ci
       - name: Expo prebuild
