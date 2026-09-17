@@ -350,6 +350,7 @@ export default function QuizEngine({
             busy={paywall && paywall.busy}
             note={paywall && paywall.note}
             onStart={onFinish}
+            onRedeem={paywall && paywall.onRedeem}
             onBack={onBack}
           />
         );

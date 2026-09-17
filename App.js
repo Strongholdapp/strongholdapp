@@ -29,6 +29,7 @@ import { configure as configureSuperwall, presentPaywall } from "./src/lib/super
 import { configureHandler } from "./src/lib/notifications";
 import { hasSuperwall, SUPERWALL_PLACEMENT, PAYWALL_ENABLED } from "./src/lib/env";
 import * as A from "./src/lib/analytics";
+import { verifyRedemptionCode } from "./src/lib/redeem";
 import QuizEngine from "./src/onboarding/QuizEngine";
 import { FIRST_SCREEN } from "./src/onboarding/screens";
 import { vars } from "./src/onboarding/derive";
@@ -60,6 +61,20 @@ function Router() {
     if (ready) SplashScreen.hideAsync().catch(() => {});
   }, [ready]);
 
+  // Código de resgate offline pra quem já comprou pelo funil web (sem
+  // servidor: ver src/lib/redeem.js). Mesmo formato de retorno do
+  // presentPaywall ({ granted }), pra PaywallBridge tratar os dois igual.
+  async function redeemAccess(code) {
+    const ok = verifyRedemptionCode(code);
+    if (!ok) {
+      A.purchaseResult("fail", { source: "redeem", reason: "invalid_code" });
+      return { granted: false };
+    }
+    A.purchaseResult("success", { source: "redeem" });
+    completeOnboarding();
+    return { granted: true };
+  }
+
   if (!ready) return <Dusk />;
 
   /* ---------- Onboarding: as 27 telas do PRD ----------
@@ -77,6 +92,7 @@ function Router() {
           note: hasSuperwall()
             ? null
             : "Superwall key not set: this build unlocks without a purchase so the whole app can be tested.",
+          onRedeem: redeemAccess,
         }}
         onFinish={async () => {
           setPayingBusy(true);

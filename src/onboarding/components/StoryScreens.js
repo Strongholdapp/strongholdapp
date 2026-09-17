@@ -11,7 +11,7 @@
    ============================================================ */
 
 import React, { useEffect, useRef, useState } from "react";
-import { View, Text, StyleSheet, Animated, Easing, Pressable } from "react-native";
+import { View, Text, TextInput, StyleSheet, Animated, Easing, Pressable } from "react-native";
 import * as Haptics from "expo-haptics";
 import { Btn, Pill } from "../../components/ui";
 import { ShieldIcon } from "../../components/Icons";
@@ -623,7 +623,22 @@ export function ProofBridge({ screen, profile, onNext, onBack }) {
 /* ============================================================
    27 , PAYWALL: recebe o profile pronto e não pergunta mais nada
    ============================================================ */
-export function PaywallBridge({ screen, profile, onStart, onBack, busy, note }) {
+export function PaywallBridge({ screen, profile, onStart, onBack, busy, note, onRedeem }) {
+  const [redeemOpen, setRedeemOpen] = useState(false);
+  const [code, setCode] = useState("");
+  const [redeemBusy, setRedeemBusy] = useState(false);
+  const [redeemError, setRedeemError] = useState(false);
+
+  async function handleRedeem() {
+    if (!onRedeem || !code.trim() || redeemBusy) return;
+    Haptics.selectionAsync().catch(() => {});
+    setRedeemBusy(true);
+    setRedeemError(false);
+    const res = await onRedeem(code);
+    setRedeemBusy(false);
+    if (!res || !res.granted) setRedeemError(true);
+  }
+
   return (
     <Shell
       onBack={onBack}
@@ -632,6 +647,48 @@ export function PaywallBridge({ screen, profile, onStart, onBack, busy, note }) 
           <Btn title={busy ? "Opening..." : screen.cta} disabled={busy} onPress={onStart} />
           <Text style={s.terms}>🔒 {screen.terms}</Text>
           {note ? <Text style={s.devnote}>{note}</Text> : null}
+
+          {onRedeem ? (
+            redeemOpen ? (
+              <View style={s.redeemBox}>
+                {/* Nada de código de exemplo no placeholder: o exemplo que
+                    estava aqui ("JOAO001-0A1547") era uma assinatura VÁLIDA,
+                    então quem digitasse o que via na tela destravava o app de
+                    graça. Qualquer exemplo novo tem o mesmo risco , por isso
+                    o texto só diz onde achar o código. */}
+                <TextInput
+                  style={s.redeemField}
+                  value={code}
+                  onChangeText={(t) => {
+                    setCode(t);
+                    setRedeemError(false);
+                  }}
+                  placeholder="Paste the code from your email"
+                  placeholderTextColor={colors.muted2}
+                  autoCapitalize="characters"
+                  autoCorrect={false}
+                  autoComplete="off"
+                  returnKeyType="done"
+                  editable={!redeemBusy}
+                  onSubmitEditing={handleRedeem}
+                  selectionColor={colors.gold}
+                />
+                <Btn
+                  title={redeemBusy ? "Checking..." : "Unlock with code"}
+                  variant="ghost"
+                  disabled={!code.trim() || redeemBusy}
+                  onPress={handleRedeem}
+                />
+                {redeemError ? (
+                  <Text style={s.redeemError}>That code didn't work. Double-check it and try again.</Text>
+                ) : null}
+              </View>
+            ) : (
+              <Pressable onPress={() => setRedeemOpen(true)} hitSlop={8} style={s.redeemLinkWrap}>
+                <Text style={s.redeemLink}>Already purchased? Enter your code</Text>
+              </Pressable>
+            )
+          ) : null}
         </>
       }
     >
@@ -1100,6 +1157,32 @@ const s = StyleSheet.create({
     color: colors.muted2,
     textAlign: "center",
     marginTop: 12,
+  },
+  redeemLinkWrap: { marginTop: 16, alignItems: "center" },
+  redeemLink: {
+    fontFamily: fonts.semibold,
+    fontSize: 13.5,
+    color: colors.muted,
+    textDecorationLine: "underline",
+  },
+  redeemBox: { marginTop: 16, gap: 10 },
+  redeemField: {
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    fontSize: 15,
+    fontFamily: fonts.body,
+    borderWidth: 1.5,
+    borderColor: colors.line,
+    borderRadius: radius.md,
+    backgroundColor: colors.card,
+    color: colors.ink,
+    textAlign: "center",
+  },
+  redeemError: {
+    fontFamily: fonts.body,
+    fontSize: 12.5,
+    color: colors.red,
+    textAlign: "center",
   },
 });
 
