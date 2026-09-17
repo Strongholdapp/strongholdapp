@@ -82,7 +82,13 @@ workflows:
           /usr/libexec/PlistBuddy -c "Print :FacebookAppID" "$PLIST" || { echo "FALTANDO FacebookAppID"; exit 1; }
           /usr/libexec/PlistBuddy -c "Print :FacebookClientToken" "$PLIST" || { echo "FALTANDO FacebookClientToken"; exit 1; }
           echo "--- Pods do Facebook/ATT instalados? ---"
-          grep -E "FBSDKCoreKit|react-native-fbsdk-next|ExpoTrackingTransparency" ios/Podfile.lock || { echo "FALTANDO PODS DE RASTREAMENTO NO Podfile.lock"; exit 1; }
+          # Um grep por pod, e nao um "OU": com a alternancia, o FBSDKCoreKit
+          # sozinho fazia a checagem passar mesmo sem o pod de ATT — foi assim
+          # que um build sem ATT chegou ate o passo final.
+          for pod in FBSDKCoreKit react-native-fbsdk-next ExpoTrackingTransparency; do
+            grep -q "$pod" ios/Podfile.lock || { echo "FALTANDO NO Podfile.lock: $pod"; exit 1; }
+            echo "  ok no Podfile.lock: $pod"
+          done
           echo "OK: config de rastreamento presente no projeto nativo gerado."
 
       # O SuperwallKit 4.5.0 (o mais novo que existe, de jun/2025) não compila
@@ -164,10 +170,22 @@ workflows:
           COUNT=$(contar "FBSDKAppEvents")
           echo "Ocorrencias de FBSDKAppEvents: $COUNT"
           if [ "$COUNT" -eq 0 ]; then echo "SDK DO META NAO ENCONTRADO DENTRO DO BINARIO"; exit 1; fi
-          echo "--- Codigo do ATT realmente compilado no binario? ---"
-          COUNT2=$(contar "ATTrackingManager")
-          echo "Ocorrencias de ATTrackingManager: $COUNT2"
-          if [ "$COUNT2" -eq 0 ]; then echo "MODULO DE ATT NAO ENCONTRADO DENTRO DO BINARIO"; exit 1; fi
+          # ATT: procurar a string "ATTrackingManager" era falso negativo. O
+          # modulo (expo-tracking-transparency) chama essa classe em SWIFT, e
+          # Swift referencia classe de framework do sistema por simbolo, nao
+          # por literal — entao o `strings` podia nao achar nada mesmo com o
+          # ATT funcionando. A pergunta certa e se o binario LINKA o framework.
+          echo "--- O binario linka o AppTrackingTransparency? ---"
+          LINKA=$(otool -L "$BIN" | grep -c "AppTrackingTransparency" || true)
+          echo "Referencias em otool -L: $LINKA"
+          echo "--- E o modulo do Expo esta no .ipa? ---"
+          MOD=$(contar "TrackingTransparencyPermissionRequester")
+          if [ "$MOD" -eq 0 ]; then MOD=$(contar "ExpoTrackingTransparency"); fi
+          echo "Ocorrencias do modulo de ATT: $MOD"
+          if [ "$LINKA" -eq 0 ] && [ "$MOD" -eq 0 ]; then
+            echo "ATT NAO ENCONTRADO: nem o framework linkado, nem o modulo do Expo dentro do .ipa."
+            exit 1
+          fi
           echo "OK: rastreamento (Meta + ATT) confirmado dentro do .ipa que vai pro TestFlight."
     artifacts:
       - build/ios/ipa/*.ipa
@@ -251,7 +269,13 @@ workflows:
           /usr/libexec/PlistBuddy -c "Print :FacebookAppID" "$PLIST" || { echo "FALTANDO FacebookAppID"; exit 1; }
           /usr/libexec/PlistBuddy -c "Print :FacebookClientToken" "$PLIST" || { echo "FALTANDO FacebookClientToken"; exit 1; }
           echo "--- Pods do Facebook/ATT instalados? ---"
-          grep -E "FBSDKCoreKit|react-native-fbsdk-next|ExpoTrackingTransparency" ios/Podfile.lock || { echo "FALTANDO PODS DE RASTREAMENTO NO Podfile.lock"; exit 1; }
+          # Um grep por pod, e nao um "OU": com a alternancia, o FBSDKCoreKit
+          # sozinho fazia a checagem passar mesmo sem o pod de ATT — foi assim
+          # que um build sem ATT chegou ate o passo final.
+          for pod in FBSDKCoreKit react-native-fbsdk-next ExpoTrackingTransparency; do
+            grep -q "$pod" ios/Podfile.lock || { echo "FALTANDO NO Podfile.lock: $pod"; exit 1; }
+            echo "  ok no Podfile.lock: $pod"
+          done
           echo "OK: config de rastreamento presente no projeto nativo gerado."
       # Mesmo remendo do workflow de TestFlight, ver explicação lá em cima.
       - name: Corrigir ambiguidade do SuperwallKit (Xcode 26)
@@ -309,10 +333,22 @@ workflows:
           COUNT=$(contar "FBSDKAppEvents")
           echo "Ocorrencias de FBSDKAppEvents: $COUNT"
           if [ "$COUNT" -eq 0 ]; then echo "SDK DO META NAO ENCONTRADO DENTRO DO BINARIO"; exit 1; fi
-          echo "--- Codigo do ATT realmente compilado no binario? ---"
-          COUNT2=$(contar "ATTrackingManager")
-          echo "Ocorrencias de ATTrackingManager: $COUNT2"
-          if [ "$COUNT2" -eq 0 ]; then echo "MODULO DE ATT NAO ENCONTRADO DENTRO DO BINARIO"; exit 1; fi
+          # ATT: procurar a string "ATTrackingManager" era falso negativo. O
+          # modulo (expo-tracking-transparency) chama essa classe em SWIFT, e
+          # Swift referencia classe de framework do sistema por simbolo, nao
+          # por literal — entao o `strings` podia nao achar nada mesmo com o
+          # ATT funcionando. A pergunta certa e se o binario LINKA o framework.
+          echo "--- O binario linka o AppTrackingTransparency? ---"
+          LINKA=$(otool -L "$BIN" | grep -c "AppTrackingTransparency" || true)
+          echo "Referencias em otool -L: $LINKA"
+          echo "--- E o modulo do Expo esta no .ipa? ---"
+          MOD=$(contar "TrackingTransparencyPermissionRequester")
+          if [ "$MOD" -eq 0 ]; then MOD=$(contar "ExpoTrackingTransparency"); fi
+          echo "Ocorrencias do modulo de ATT: $MOD"
+          if [ "$LINKA" -eq 0 ] && [ "$MOD" -eq 0 ]; then
+            echo "ATT NAO ENCONTRADO: nem o framework linkado, nem o modulo do Expo dentro do .ipa."
+            exit 1
+          fi
           echo "OK: rastreamento (Meta + ATT) confirmado dentro do .ipa final."
     artifacts:
       - build/ios/ipa/*.ipa
