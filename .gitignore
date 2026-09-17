@@ -42,3 +42,8 @@ yarn-error.*
 
 # Env local (chaves ficam fora do Git; no Codemagic use variáveis de ambiente)
 .env
+
+# Ferramentas de agente (nao fazem parte do app)
+.agents/
+.claude/
+skills-lock.json
